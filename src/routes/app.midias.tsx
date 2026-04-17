@@ -59,6 +59,20 @@ function MediaPage() {
   const iconFor = (t: string) =>
     t.includes("video") ? Video : t.includes("html") ? FileCode : ImageIcon;
 
+  // Converte URLs de visualização (Google Drive, Dropbox) em links diretos de imagem
+  const toDirectUrl = (url?: string | null) => {
+    if (!url) return "";
+    // Google Drive: .../file/d/{ID}/view  ->  uc?export=view&id={ID}
+    const gdrive = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    if (gdrive) return `https://drive.google.com/uc?export=view&id=${gdrive[1]}`;
+    // Google Drive open?id=
+    const gdriveOpen = url.match(/drive\.google\.com\/open\?id=([^&]+)/);
+    if (gdriveOpen) return `https://drive.google.com/uc?export=view&id=${gdriveOpen[1]}`;
+    // Dropbox: ?dl=0 -> ?raw=1
+    if (url.includes("dropbox.com")) return url.replace(/[?&]dl=\d/, "").concat(url.includes("?") ? "&raw=1" : "?raw=1");
+    return url;
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -120,7 +134,16 @@ function MediaPage() {
                 >
                   <div className="relative aspect-video bg-surface overflow-hidden">
                     {m.thumbnail_url ? (
-                      <img src={m.thumbnail_url} alt={m.name} className="w-full h-full object-cover" loading="lazy" />
+                      <img
+                        src={toDirectUrl(m.thumbnail_url)}
+                        alt={m.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = "none";
+                        }}
+                      />
                     ) : (
                       <div className="w-full h-full grid place-items-center text-muted-foreground">
                         <Icon className="h-6 w-6" />
