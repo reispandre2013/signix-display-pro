@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/ui-kit/StatusBadge";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui-kit/States";
 import { Modal, FormField, TextInput, PrimaryButton } from "@/components/ui-kit/FormControls";
 import { useMedia, useCreateMedia, useDeleteMedia } from "@/lib/hooks/use-supabase-data";
+import { applyMediaFallback, getMediaUrlCandidates } from "@/lib/media-url";
 import {
   Plus,
   Upload,
@@ -58,27 +59,6 @@ function MediaPage() {
 
   const iconFor = (t: string) =>
     t.includes("video") ? Video : t.includes("html") ? FileCode : ImageIcon;
-
-  // Converte links de visualização em URLs realmente incorporáveis em <img>
-  const toDirectUrl = (url?: string | null) => {
-    if (!url) return "";
-
-    const driveId =
-      url.match(/drive\.google\.com\/file\/d\/([^/?]+)/)?.[1] ||
-      url.match(/[?&]id=([^&]+)/)?.[1] ||
-      url.match(/drive\.google\.com\/thumbnail\?id=([^&]+)/)?.[1] ||
-      url.match(/lh3\.googleusercontent\.com\/d\/([^=/?]+)/)?.[1];
-
-    if (driveId) return `https://lh3.googleusercontent.com/d/${driveId}=w1600`;
-
-    // Dropbox: força conteúdo bruto em vez de página de preview
-    if (url.includes("dropbox.com")) {
-      const cleanUrl = url.replace(/[?&](dl|raw)=\d/g, "");
-      return cleanUrl.concat(cleanUrl.includes("?") ? "&raw=1" : "?raw=1");
-    }
-
-    return url;
-  };
 
   return (
     <div className="space-y-6">
@@ -134,31 +114,23 @@ function MediaPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
             {filtered.map((m) => {
               const Icon = iconFor(m.file_type);
+              const sources = getMediaUrlCandidates(m.thumbnail_url, m.public_url);
               return (
                 <article
                   key={m.id}
                   className="group rounded-lg border border-border bg-card overflow-hidden hover:border-primary/40 hover:shadow-glow transition-smooth"
                 >
                   <div className="relative aspect-video bg-surface overflow-hidden">
-                    {m.thumbnail_url || m.public_url ? (
+                    {sources.length > 0 ? (
                       <img
-                        src={toDirectUrl(m.thumbnail_url || m.public_url)}
+                        src={sources[0]}
+                        data-sources={JSON.stringify(sources)}
+                        data-source-index="0"
                         alt={m.name}
                         className="w-full h-full object-cover"
                         loading="lazy"
                         referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          const img = e.currentTarget as HTMLImageElement;
-                          const fallbackUrl = toDirectUrl(m.public_url);
-
-                          if (img.dataset.fallbackApplied === "true" || !fallbackUrl || img.src === fallbackUrl) {
-                            img.style.display = "none";
-                            return;
-                          }
-
-                          img.dataset.fallbackApplied = "true";
-                          img.src = fallbackUrl;
-                        }}
+                        onError={(e) => applyMediaFallback(e.currentTarget)}
                       />
                     ) : (
                       <div className="w-full h-full grid place-items-center text-muted-foreground">

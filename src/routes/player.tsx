@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Tv, Maximize2, Volume2, Wifi, Image as ImageIcon } from "lucide-react";
 import { useMedia, useCampaigns } from "@/lib/hooks/use-supabase-data";
+import { applyMediaFallback, getMediaUrlCandidates } from "@/lib/media-url";
 
 export const Route = createFileRoute("/player")({
   head: () => ({ meta: [{ title: "Player — Signix" }] }),
@@ -29,6 +30,7 @@ function PlayerPage() {
   }, []);
 
   const current = items[idx];
+  const currentSources = current ? getMediaUrlCandidates(current.public_url, current.thumbnail_url) : [];
 
   if (items.length === 0) {
     return (
@@ -48,10 +50,14 @@ function PlayerPage() {
     <div className="min-h-screen w-screen bg-black text-white flex flex-col overflow-hidden">
       <div className="absolute inset-0">
         <img
-          src={current.public_url ?? ""}
-          alt=""
+          src={currentSources[0] ?? ""}
+          data-sources={JSON.stringify(currentSources)}
+          data-source-index="0"
+          alt={current.name}
           className="w-full h-full object-cover transition-opacity duration-1000"
-          key={current.id}
+          key={`${current.id}-${currentSources[0] ?? "empty"}`}
+          referrerPolicy="no-referrer"
+          onError={(e) => applyMediaFallback(e.currentTarget)}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
       </div>
