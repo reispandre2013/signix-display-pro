@@ -11,7 +11,10 @@ export const Route = createFileRoute("/app/configuracoes")({
 function SettingsPage() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Configurações gerais" subtitle="Preferências do sistema, segurança e aparência." />
+      <PageHeader
+        title="Configurações gerais"
+        subtitle="Preferências do sistema, segurança e aparência."
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Panel title="Aparência" actions={<Palette className="h-4 w-4 text-muted-foreground" />}>
@@ -21,7 +24,9 @@ function SettingsPage() {
               <button className="rounded-lg border-2 border-primary bg-card p-4 text-left ring-glow">
                 <Moon className="h-5 w-5 text-primary mb-2" />
                 <p className="text-sm font-medium">Dark (padrão)</p>
-                <p className="text-[11px] text-muted-foreground">Conforto visual em ambiente operacional.</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Conforto visual em ambiente operacional.
+                </p>
               </button>
               <button className="rounded-lg border border-border bg-card p-4 text-left hover:border-primary/40">
                 <Sun className="h-5 w-5 text-warning mb-2" />
@@ -34,11 +39,23 @@ function SettingsPage() {
 
         <Panel title="Notificações" actions={<Bell className="h-4 w-4 text-muted-foreground" />}>
           <ul className="space-y-3">
-            {["Tela ficou offline", "Falha de sincronização", "Nova campanha agendada", "Resumo diário por e-mail"].map((n, i) => (
-              <li key={n} className="flex items-center justify-between rounded-md border border-border bg-surface/40 px-3 py-2">
+            {[
+              "Tela ficou offline",
+              "Falha de sincronização",
+              "Nova campanha agendada",
+              "Resumo diário por e-mail",
+            ].map((n, i) => (
+              <li
+                key={n}
+                className="flex items-center justify-between rounded-md border border-border bg-surface/40 px-3 py-2"
+              >
                 <span className="text-sm">{n}</span>
-                <button className={`relative h-5 w-9 rounded-full ${i % 2 === 0 ? "bg-primary" : "bg-muted"}`}>
-                  <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-background transition-all ${i % 2 === 0 ? "left-4" : "left-0.5"}`} />
+                <button
+                  className={`relative h-5 w-9 rounded-full ${i % 2 === 0 ? "bg-primary" : "bg-muted"}`}
+                >
+                  <span
+                    className={`absolute top-0.5 h-4 w-4 rounded-full bg-background transition-all ${i % 2 === 0 ? "left-4" : "left-0.5"}`}
+                  />
                 </button>
               </li>
             ))}
@@ -76,7 +93,10 @@ function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <label className="text-xs font-medium text-muted-foreground mb-1.5 block">{label}</label>
-      <input defaultValue={value} className="w-full rounded-lg border border-input bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+      <input
+        defaultValue={value}
+        className="w-full rounded-lg border border-input bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+      />
     </div>
   );
 }
@@ -86,7 +106,9 @@ function Toggle({ label, on = false }: { label: string; on?: boolean }) {
     <div className="flex items-center justify-between rounded-md border border-border bg-surface/40 px-3 py-2">
       <span className="text-sm">{label}</span>
       <button className={`relative h-5 w-9 rounded-full ${on ? "bg-primary" : "bg-muted"}`}>
-        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-background transition-all ${on ? "left-4" : "left-0.5"}`} />
+        <span
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-background transition-all ${on ? "left-4" : "left-0.5"}`}
+        />
       </button>
     </div>
   );

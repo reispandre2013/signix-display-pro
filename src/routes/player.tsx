@@ -16,7 +16,10 @@ function PlayerPage() {
   useEffect(() => {
     const t = setInterval(() => setIdx((i) => (i + 1) % items.length), 5000);
     const c = setInterval(() => setNow(new Date()), 1000);
-    return () => { clearInterval(t); clearInterval(c); };
+    return () => {
+      clearInterval(t);
+      clearInterval(c);
+    };
   }, [items.length]);
 
   const current = items[idx];
@@ -24,7 +27,12 @@ function PlayerPage() {
   return (
     <div className="min-h-screen w-screen bg-black text-white flex flex-col overflow-hidden">
       <div className="absolute inset-0">
-        <img src={current.url} alt="" className="w-full h-full object-cover transition-opacity duration-1000" key={current.id} />
+        <img
+          src={current.url}
+          alt=""
+          className="w-full h-full object-cover transition-opacity duration-1000"
+          key={current.id}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
       </div>
 
@@ -37,8 +45,12 @@ function PlayerPage() {
           </span>
         </div>
         <div className="flex items-center gap-3 text-xs text-white/80">
-          <span className="inline-flex items-center gap-1"><Wifi className="h-3.5 w-3.5" /> 87 Mbps</span>
-          <span className="inline-flex items-center gap-1"><Volume2 className="h-3.5 w-3.5" /> 60%</span>
+          <span className="inline-flex items-center gap-1">
+            <Wifi className="h-3.5 w-3.5" /> 87 Mbps
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Volume2 className="h-3.5 w-3.5" /> 60%
+          </span>
           <span className="font-mono">{now.toLocaleTimeString("pt-BR")}</span>
         </div>
       </div>
@@ -67,8 +79,13 @@ function PlayerPage() {
           ))}
         </div>
         <div className="mt-3 flex items-center justify-between text-[11px] text-white/60">
-          <span>Item {idx + 1} / {items.length} · {current.name}</span>
-          <Link to="/app" className="inline-flex items-center gap-1 hover:text-white transition-colors">
+          <span>
+            Item {idx + 1} / {items.length} · {current.name}
+          </span>
+          <Link
+            to="/app"
+            className="inline-flex items-center gap-1 hover:text-white transition-colors"
+          >
             <Maximize2 className="h-3 w-3" /> Sair do modo player
           </Link>
         </div>

@@ -17,7 +17,10 @@ function PairingPage() {
           </div>
           <span className="font-display text-lg font-bold">Signix Player</span>
         </div>
-        <Link to="/login" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+        <Link
+          to="/login"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+        >
           <ArrowLeft className="h-3.5 w-3.5" /> Painel administrativo
         </Link>
       </div>
@@ -25,22 +28,33 @@ function PairingPage() {
       <div className="flex-1 grid place-items-center p-6">
         <div className="w-full max-w-xl text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs">
-            <span className="h-1.5 w-1.5 rounded-full bg-success pulse-dot" /> Aguardando confirmação no painel
+            <span className="h-1.5 w-1.5 rounded-full bg-success pulse-dot" /> Aguardando
+            confirmação no painel
           </div>
           <h1 className="mt-6 font-display text-3xl lg:text-4xl font-bold leading-tight">
-            Use o código abaixo para parear<br />este dispositivo à sua conta
+            Use o código abaixo para parear
+            <br />
+            este dispositivo à sua conta
           </h1>
           <p className="mt-3 text-muted-foreground max-w-md mx-auto text-sm">
-            Acesse <span className="text-foreground font-medium">Telas › Adicionar tela</span> no painel Signix e informe o código exibido.
+            Acesse <span className="text-foreground font-medium">Telas › Adicionar tela</span> no
+            painel Signix e informe o código exibido.
           </p>
 
           <div className="mt-10 inline-flex items-center gap-3 rounded-2xl border border-border bg-card px-8 py-6 shadow-glow">
             {code.split("").map((c, i) =>
               c === "-" ? (
-                <span key={i} className="font-display text-4xl text-muted-foreground">·</span>
+                <span key={i} className="font-display text-4xl text-muted-foreground">
+                  ·
+                </span>
               ) : (
-                <span key={i} className="font-mono text-5xl font-bold text-gradient w-10 text-center">{c}</span>
-              )
+                <span
+                  key={i}
+                  className="font-mono text-5xl font-bold text-gradient w-10 text-center"
+                >
+                  {c}
+                </span>
+              ),
             )}
           </div>
 

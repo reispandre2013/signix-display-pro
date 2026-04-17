@@ -22,7 +22,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const sections: { title: string; items: { to: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
+const sections: {
+  title: string;
+  items: { to: string; label: string; icon: typeof LayoutDashboard }[];
+}[] = [
   {
     title: "Operação",
     items: [
@@ -72,7 +75,9 @@ export function Sidebar() {
         </div>
         <div className="flex flex-col leading-tight">
           <span className="font-display text-lg font-bold tracking-tight">Signix</span>
-          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Digital Signage</span>
+          <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            Digital Signage
+          </span>
         </div>
       </div>
 
@@ -84,7 +89,8 @@ export function Sidebar() {
             </div>
             <div className="space-y-0.5">
               {sec.items.map((it) => {
-                const active = pathname === it.to || (it.to !== "/app" && pathname.startsWith(it.to));
+                const active =
+                  pathname === it.to || (it.to !== "/app" && pathname.startsWith(it.to));
                 const Icon = it.icon;
                 return (
                   <Link
@@ -93,11 +99,16 @@ export function Sidebar() {
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-smooth",
                       "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                      active && "bg-sidebar-accent text-sidebar-accent-foreground shadow-card relative"
+                      active &&
+                        "bg-sidebar-accent text-sidebar-accent-foreground shadow-card relative",
                     )}
                   >
-                    {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full bg-primary" />}
-                    <Icon className={cn("h-4 w-4", active ? "text-primary" : "text-muted-foreground")} />
+                    {active && (
+                      <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r-full bg-primary" />
+                    )}
+                    <Icon
+                      className={cn("h-4 w-4", active ? "text-primary" : "text-muted-foreground")}
+                    />
                     <span className="font-medium">{it.label}</span>
                   </Link>
                 );

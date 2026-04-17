@@ -11,7 +11,10 @@ export const Route = createFileRoute("/app/usuarios")({
 });
 
 const roleTone: Record<string, "primary" | "success" | "warning" | "neutral"> = {
-  "Admin Master": "primary", Gestor: "success", Operador: "warning", Visualizador: "neutral",
+  "Admin Master": "primary",
+  Gestor: "success",
+  Operador: "warning",
+  Visualizador: "neutral",
 };
 
 function UsersPage() {
@@ -43,19 +46,34 @@ function UsersPage() {
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-2.5">
                     <div className="h-9 w-9 rounded-full bg-gradient-primary grid place-items-center text-xs font-bold text-primary-foreground">
-                      {u.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                      {u.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join("")}
                     </div>
                     <div>
                       <p className="font-medium">{u.name}</p>
-                      <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1"><Mail className="h-3 w-3" /> {u.email}</p>
+                      <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
+                        <Mail className="h-3 w-3" /> {u.email}
+                      </p>
                     </div>
                   </div>
                 </td>
-                <td className="px-5 py-3.5"><StatusBadge tone={roleTone[u.role]} label={u.role} withDot={false} /></td>
-                <td className="px-5 py-3.5 text-muted-foreground">{u.unit}</td>
-                <td className="px-5 py-3.5"><StatusBadge tone={u.status === "ativo" ? "success" : "neutral"} label={u.status} /></td>
                 <td className="px-5 py-3.5">
-                  <button className="inline-flex items-center gap-1 text-xs text-primary hover:underline"><Shield className="h-3 w-3" /> Permissões</button>
+                  <StatusBadge tone={roleTone[u.role]} label={u.role} withDot={false} />
+                </td>
+                <td className="px-5 py-3.5 text-muted-foreground">{u.unit}</td>
+                <td className="px-5 py-3.5">
+                  <StatusBadge
+                    tone={u.status === "ativo" ? "success" : "neutral"}
+                    label={u.status}
+                  />
+                </td>
+                <td className="px-5 py-3.5">
+                  <button className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                    <Shield className="h-3 w-3" /> Permissões
+                  </button>
                 </td>
               </tr>
             ))}

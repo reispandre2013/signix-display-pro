@@ -30,17 +30,23 @@ function LoginPage() {
           </div>
           <div>
             <p className="font-display text-xl font-bold">Signix</p>
-            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Digital Signage Cloud</p>
+            <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+              Digital Signage Cloud
+            </p>
           </div>
         </div>
 
         <div className="relative space-y-6">
           <h1 className="font-display text-4xl xl:text-5xl font-bold leading-[1.05] tracking-tight">
-            Controle <span className="text-gradient">cada tela</span><br />
-            do seu negócio em<br />tempo real.
+            Controle <span className="text-gradient">cada tela</span>
+            <br />
+            do seu negócio em
+            <br />
+            tempo real.
           </h1>
           <p className="text-muted-foreground max-w-md">
-            Gerencie playlists, campanhas e dispositivos em todas as unidades a partir de um único painel premium.
+            Gerencie playlists, campanhas e dispositivos em todas as unidades a partir de um único
+            painel premium.
           </p>
           <div className="grid grid-cols-3 gap-4 max-w-md pt-6">
             {[
@@ -56,7 +62,9 @@ function LoginPage() {
           </div>
         </div>
 
-        <div className="relative text-xs text-muted-foreground">© 2025 Signix · SaaS Enterprise</div>
+        <div className="relative text-xs text-muted-foreground">
+          © 2025 Signix · SaaS Enterprise
+        </div>
       </div>
 
       <div className="flex items-center justify-center p-6 lg:p-12">
@@ -71,11 +79,19 @@ function LoginPage() {
           <p className="text-sm text-muted-foreground mt-1">Acesse seu painel administrativo.</p>
 
           <form onSubmit={onSubmit} className="mt-8 space-y-4">
-            <Field icon={Mail} label="E-mail" type="email" placeholder="voce@empresa.com" defaultValue="ana@signix.com" />
+            <Field
+              icon={Mail}
+              label="E-mail"
+              type="email"
+              placeholder="voce@empresa.com"
+              defaultValue="ana@signix.com"
+            />
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Senha</label>
-                <Link to="/recuperar-senha" className="text-xs text-primary hover:underline">Esqueci a senha</Link>
+                <Link to="/recuperar-senha" className="text-xs text-primary hover:underline">
+                  Esqueci a senha
+                </Link>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -84,27 +100,46 @@ function LoginPage() {
                   defaultValue="••••••••"
                   className="w-full rounded-lg border border-input bg-surface pl-9 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-smooth"
                 />
-                <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <button
+                  type="button"
+                  onClick={() => setShow(!show)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
                   {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
 
             <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" className="rounded border-border bg-surface text-primary focus:ring-ring" />
+              <input
+                type="checkbox"
+                className="rounded border-border bg-surface text-primary focus:ring-ring"
+              />
               <span className="text-muted-foreground">Manter conectado por 30 dias</span>
             </label>
 
-            <button type="submit" className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow hover:opacity-95 transition-smooth">
+            <button
+              type="submit"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow hover:opacity-95 transition-smooth"
+            >
               Entrar no painel <ArrowRight className="h-4 w-4" />
             </button>
 
             <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
-              <div className="relative flex justify-center"><span className="bg-background px-3 text-[11px] uppercase tracking-widest text-muted-foreground">ou</span></div>
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-background px-3 text-[11px] uppercase tracking-widest text-muted-foreground">
+                  ou
+                </span>
+              </div>
             </div>
 
-            <Link to="/pareamento" className="block w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-center text-sm font-medium hover:bg-accent transition-smooth">
+            <Link
+              to="/pareamento"
+              className="block w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-center text-sm font-medium hover:bg-accent transition-smooth"
+            >
               Parear um novo player
             </Link>
           </form>
@@ -114,7 +149,11 @@ function LoginPage() {
   );
 }
 
-function Field({ icon: Icon, label, ...rest }: { icon: typeof Mail; label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+function Field({
+  icon: Icon,
+  label,
+  ...rest
+}: { icon: typeof Mail; label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div>
       <label className="text-xs font-medium text-muted-foreground mb-1.5 block">{label}</label>

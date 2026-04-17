@@ -38,14 +38,23 @@ function GroupsPage() {
               <tr key={g.id} className="border-b border-border/50 hover:bg-surface/40">
                 <td className="px-5 py-3.5">
                   <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-md bg-primary/10 grid place-items-center text-primary"><Layers className="h-4 w-4" /></div>
+                    <div className="h-8 w-8 rounded-md bg-primary/10 grid place-items-center text-primary">
+                      <Layers className="h-4 w-4" />
+                    </div>
                     <span className="font-medium">{g.name}</span>
                   </div>
                 </td>
                 <td className="px-5 py-3.5 text-muted-foreground">{g.description}</td>
                 <td className="px-5 py-3.5 font-mono">{g.screens}</td>
-                <td className="px-5 py-3.5"><StatusBadge tone={g.status === "ativo" ? "success" : "neutral"} label={g.status} /></td>
-                <td className="px-5 py-3.5"><MoreHorizontal className="h-4 w-4 text-muted-foreground" /></td>
+                <td className="px-5 py-3.5">
+                  <StatusBadge
+                    tone={g.status === "ativo" ? "success" : "neutral"}
+                    label={g.status}
+                  />
+                </td>
+                <td className="px-5 py-3.5">
+                  <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                </td>
               </tr>
             ))}
           </tbody>

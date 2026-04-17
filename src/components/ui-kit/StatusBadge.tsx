@@ -1,6 +1,15 @@
 import { cn } from "@/lib/utils";
 
-type Tone = "online" | "offline" | "warning" | "syncing" | "neutral" | "primary" | "success" | "destructive" | "info";
+type Tone =
+  | "online"
+  | "offline"
+  | "warning"
+  | "syncing"
+  | "neutral"
+  | "primary"
+  | "success"
+  | "destructive"
+  | "info";
 
 const tones: Record<Tone, string> = {
   online: "bg-success/10 text-success ring-success/30",
@@ -21,12 +30,31 @@ const labels: Record<string, string> = {
   syncing: "Sincronizando",
 };
 
-export function StatusBadge({ status, label, tone, withDot = true }: { status?: string; label?: string; tone?: Tone; withDot?: boolean }) {
+export function StatusBadge({
+  status,
+  label,
+  tone,
+  withDot = true,
+}: {
+  status?: string;
+  label?: string;
+  tone?: Tone;
+  withDot?: boolean;
+}) {
   const t = (tone ?? (status as Tone) ?? "neutral") as Tone;
-  const text = label ?? (status ? labels[status] ?? status : "—");
+  const text = label ?? (status ? (labels[status] ?? status) : "—");
   return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset", tones[t] ?? tones.neutral)}>
-      {withDot && <span className={cn("h-1.5 w-1.5 rounded-full bg-current", t === "online" && "pulse-dot")} />}
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset",
+        tones[t] ?? tones.neutral,
+      )}
+    >
+      {withDot && (
+        <span
+          className={cn("h-1.5 w-1.5 rounded-full bg-current", t === "online" && "pulse-dot")}
+        />
+      )}
       {text}
     </span>
   );

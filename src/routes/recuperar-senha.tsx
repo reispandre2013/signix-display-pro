@@ -38,7 +38,10 @@ function RecoverPage() {
           </button>
         </form>
 
-        <Link to="/login" className="mt-6 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-smooth">
+        <Link
+          to="/login"
+          className="mt-6 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-smooth"
+        >
           <ArrowLeft className="h-3.5 w-3.5" /> Voltar para login
         </Link>
       </div>

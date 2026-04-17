@@ -11,7 +11,10 @@ export const Route = createFileRoute("/app/empresas")({
 function CompaniesPage() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Empresa / Organização" subtitle="Dados da sua organização e identidade visual." />
+      <PageHeader
+        title="Empresa / Organização"
+        subtitle="Dados da sua organização e identidade visual."
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Panel title="Identidade" className="lg:col-span-1">
@@ -25,11 +28,15 @@ function CompaniesPage() {
           </div>
         </Panel>
 
-        <Panel title="Dados cadastrais" className="lg:col-span-2" actions={
-          <button className="inline-flex items-center gap-1.5 rounded-md bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-glow">
-            <Save className="h-3.5 w-3.5" /> Salvar
-          </button>
-        }>
+        <Panel
+          title="Dados cadastrais"
+          className="lg:col-span-2"
+          actions={
+            <button className="inline-flex items-center gap-1.5 rounded-md bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-glow">
+              <Save className="h-3.5 w-3.5" /> Salvar
+            </button>
+          }
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="Nome da empresa" value="Signix Demo Corp" />
             <Field label="CNPJ" value="00.000.000/0001-00" />
@@ -40,10 +47,15 @@ function CompaniesPage() {
             <Field label="Estado" value="SP" />
             <Field label="Idioma" value="Português (Brasil)" />
             <div className="md:col-span-2">
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Fuso horário</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                Fuso horário
+              </label>
               <div className="relative">
                 <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input defaultValue="America/Sao_Paulo (UTC -03:00)" className="w-full rounded-lg border border-input bg-surface pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                <input
+                  defaultValue="America/Sao_Paulo (UTC -03:00)"
+                  className="w-full rounded-lg border border-input bg-surface pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
               </div>
             </div>
           </div>
@@ -57,7 +69,10 @@ function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <label className="text-xs font-medium text-muted-foreground mb-1.5 block">{label}</label>
-      <input defaultValue={value} className="w-full rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+      <input
+        defaultValue={value}
+        className="w-full rounded-lg border border-input bg-surface px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+      />
     </div>
   );
 }

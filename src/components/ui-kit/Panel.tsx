@@ -17,7 +17,12 @@ export function Panel({
   bodyClassName?: string;
 }) {
   return (
-    <section className={cn("rounded-xl border border-border bg-card shadow-card overflow-hidden", className)}>
+    <section
+      className={cn(
+        "rounded-xl border border-border bg-card shadow-card overflow-hidden",
+        className,
+      )}
+    >
       {(title || actions) && (
         <header className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border">
           <div>

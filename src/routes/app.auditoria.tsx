@@ -14,7 +14,10 @@ export const Route = createFileRoute("/app/auditoria")({
 function AuditPage() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Logs e auditoria" subtitle="Registro completo de ações realizadas no sistema." />
+      <PageHeader
+        title="Logs e auditoria"
+        subtitle="Registro completo de ações realizadas no sistema."
+      />
       <Panel bodyClassName="p-0">
         <ul className="divide-y divide-border">
           {mockAudit.map((l) => (
@@ -24,7 +27,10 @@ function AuditPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm">
-                  <span className="font-medium inline-flex items-center gap-1"><User className="h-3 w-3 text-muted-foreground" />{l.user}</span>
+                  <span className="font-medium inline-flex items-center gap-1">
+                    <User className="h-3 w-3 text-muted-foreground" />
+                    {l.user}
+                  </span>
                   <span className="text-muted-foreground"> {l.action} </span>
                   <span className="text-primary font-medium">{l.entity}</span>
                   <span className="text-muted-foreground"> · </span>

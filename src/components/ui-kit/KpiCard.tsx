@@ -25,7 +25,9 @@ export function KpiCard({ label, value, delta, icon: Icon, tone = "primary", hin
       <div className={cn("absolute inset-0 bg-gradient-to-br opacity-60", tones[tone])} />
       <div className="relative flex items-start justify-between">
         <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            {label}
+          </p>
           <p className="mt-2 font-display text-3xl font-bold tracking-tight">{value}</p>
           {hint && <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>}
         </div>

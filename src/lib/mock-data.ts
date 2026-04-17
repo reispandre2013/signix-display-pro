@@ -143,7 +143,15 @@ export const mockUnits: Unit[] = units.map((name, i) => ({
   address: `Av. Paulista, ${1000 + i * 137}`,
   city: name.split(" ").slice(1).join(" "),
   state: ["SP", "RJ", "MG", "PR", "RS", "BA", "PE"][i],
-  responsible: ["Ana Souza", "Carlos Lima", "Marina Reis", "Pedro Alves", "Júlia Mota", "Rafael Dias", "Beatriz Nunes"][i],
+  responsible: [
+    "Ana Souza",
+    "Carlos Lima",
+    "Marina Reis",
+    "Pedro Alves",
+    "Júlia Mota",
+    "Rafael Dias",
+    "Beatriz Nunes",
+  ][i],
   phone: `(${10 + i}) 9${pad(1000 + i)}-${pad(2000 + i * 11)}`,
   status: i === 5 ? "inactive" : "active",
   screens: [12, 8, 6, 5, 4, 0, 3][i],
@@ -151,7 +159,15 @@ export const mockUnits: Unit[] = units.map((name, i) => ({
 
 export const mockScreens: Screen[] = Array.from({ length: 38 }).map((_, i) => {
   const unit = mockUnits[i % mockUnits.length];
-  const statuses: DeviceStatus[] = ["online", "online", "online", "online", "offline", "warning", "syncing"];
+  const statuses: DeviceStatus[] = [
+    "online",
+    "online",
+    "online",
+    "online",
+    "offline",
+    "warning",
+    "syncing",
+  ];
   const status = statuses[i % statuses.length];
   return {
     id: `scr-${pad(i + 1)}`,
@@ -182,7 +198,9 @@ export const mockCampaigns: Campaign[] = campaignNames.map((name, i) => ({
   priority: (["baixa", "média", "alta", "crítica"] as const)[i % 4],
   startDate: timeAgo(60 * 24 * (i + 1)),
   endDate: timeAgo(-60 * 24 * (15 - i)),
-  status: (["ativa", "agendada", "pausada", "ativa", "ativa", "encerrada", "ativa", "agendada"] as const)[i],
+  status: (
+    ["ativa", "agendada", "pausada", "ativa", "ativa", "encerrada", "ativa", "agendada"] as const
+  )[i],
   screens: 4 + i * 3,
   units: 1 + (i % 5),
 }));
@@ -208,7 +226,15 @@ export const mockMedia: Media[] = Array.from({ length: 24 }).map((_, i) => {
 
 export const mockPlaylists: Playlist[] = Array.from({ length: 7 }).map((_, i) => ({
   id: `pl-${i + 1}`,
-  name: ["Hall Principal Manhã", "Cardápio Almoço", "Promo Sazonal", "Comunicados RH", "Loop Institucional", "Lançamentos", "Vitrine Digital"][i],
+  name: [
+    "Hall Principal Manhã",
+    "Cardápio Almoço",
+    "Promo Sazonal",
+    "Comunicados RH",
+    "Loop Institucional",
+    "Lançamentos",
+    "Vitrine Digital",
+  ][i],
   description: "Sequência otimizada para exibição contínua com transições suaves.",
   items: 4 + i * 2,
   duration: 60 + i * 45,
@@ -220,7 +246,14 @@ export const mockAlerts: Alert[] = Array.from({ length: 14 }).map((_, i) => {
   const sev: Severity[] = ["low", "medium", "high", "critical"];
   return {
     id: `alt-${i + 1}`,
-    type: rand(["Player offline", "Falha de sync", "Mídia corrompida", "Pareamento perdido", "CPU alta", "Sem internet"]),
+    type: rand([
+      "Player offline",
+      "Falha de sync",
+      "Mídia corrompida",
+      "Pareamento perdido",
+      "CPU alta",
+      "Sem internet",
+    ]),
     severity: sev[i % 4],
     screen: mockScreens[i % mockScreens.length].name,
     date: timeAgo(i * 23 + 5),
@@ -232,33 +265,130 @@ export const mockAlerts: Alert[] = Array.from({ length: 14 }).map((_, i) => {
 export const mockAudit: AuditLog[] = Array.from({ length: 22 }).map((_, i) => ({
   id: `log-${i + 1}`,
   user: rand(["Ana Souza", "Carlos Lima", "Marina Reis", "Pedro Alves", "Operador 01"]),
-  action: rand(["criou", "editou", "excluiu", "publicou", "fez upload de", "pareou", "alterou campanha em"]),
+  action: rand([
+    "criou",
+    "editou",
+    "excluiu",
+    "publicou",
+    "fez upload de",
+    "pareou",
+    "alterou campanha em",
+  ]),
   entity: rand(["Campanha", "Playlist", "Mídia", "Tela", "Unidade", "Usuário"]),
-  target: rand(["Black Friday 2025", "Promo Verão", "Tela 04 • SP", "Hall Principal", "Cardápio Almoço"]),
+  target: rand([
+    "Black Friday 2025",
+    "Promo Verão",
+    "Tela 04 • SP",
+    "Hall Principal",
+    "Cardápio Almoço",
+  ]),
   date: timeAgo(i * 17 + 3),
 }));
 
 export const mockUsers: UserAccount[] = [
-  { id: "us-1", name: "Ana Souza", email: "ana@signix.com", role: "Admin Master", status: "ativo", unit: "Todas", createdAt: timeAgo(60 * 24 * 120) },
-  { id: "us-2", name: "Carlos Lima", email: "carlos@signix.com", role: "Gestor", status: "ativo", unit: "Matriz São Paulo", createdAt: timeAgo(60 * 24 * 90) },
-  { id: "us-3", name: "Marina Reis", email: "marina@signix.com", role: "Operador", status: "ativo", unit: "Filial Rio de Janeiro", createdAt: timeAgo(60 * 24 * 60) },
-  { id: "us-4", name: "Pedro Alves", email: "pedro@signix.com", role: "Operador", status: "ativo", unit: "Filial Curitiba", createdAt: timeAgo(60 * 24 * 45) },
-  { id: "us-5", name: "Júlia Mota", email: "julia@signix.com", role: "Visualizador", status: "inativo", unit: "Filial BH", createdAt: timeAgo(60 * 24 * 30) },
-  { id: "us-6", name: "Rafael Dias", email: "rafael@signix.com", role: "Gestor", status: "ativo", unit: "Filial Salvador", createdAt: timeAgo(60 * 24 * 15) },
+  {
+    id: "us-1",
+    name: "Ana Souza",
+    email: "ana@signix.com",
+    role: "Admin Master",
+    status: "ativo",
+    unit: "Todas",
+    createdAt: timeAgo(60 * 24 * 120),
+  },
+  {
+    id: "us-2",
+    name: "Carlos Lima",
+    email: "carlos@signix.com",
+    role: "Gestor",
+    status: "ativo",
+    unit: "Matriz São Paulo",
+    createdAt: timeAgo(60 * 24 * 90),
+  },
+  {
+    id: "us-3",
+    name: "Marina Reis",
+    email: "marina@signix.com",
+    role: "Operador",
+    status: "ativo",
+    unit: "Filial Rio de Janeiro",
+    createdAt: timeAgo(60 * 24 * 60),
+  },
+  {
+    id: "us-4",
+    name: "Pedro Alves",
+    email: "pedro@signix.com",
+    role: "Operador",
+    status: "ativo",
+    unit: "Filial Curitiba",
+    createdAt: timeAgo(60 * 24 * 45),
+  },
+  {
+    id: "us-5",
+    name: "Júlia Mota",
+    email: "julia@signix.com",
+    role: "Visualizador",
+    status: "inativo",
+    unit: "Filial BH",
+    createdAt: timeAgo(60 * 24 * 30),
+  },
+  {
+    id: "us-6",
+    name: "Rafael Dias",
+    email: "rafael@signix.com",
+    role: "Gestor",
+    status: "ativo",
+    unit: "Filial Salvador",
+    createdAt: timeAgo(60 * 24 * 15),
+  },
 ];
 
 export const mockGroups = [
-  { id: "g-1", name: "Hall Lobby", description: "Telas de recepção em todas as unidades", screens: 7, status: "ativo" },
-  { id: "g-2", name: "Restaurante Interno", description: "Cardápio digital de praças de alimentação", screens: 5, status: "ativo" },
-  { id: "g-3", name: "Vitrines Externas", description: "Telas voltadas para o público externo", screens: 9, status: "ativo" },
-  { id: "g-4", name: "Áreas Operacionais", description: "Comunicação interna para colaboradores", screens: 6, status: "ativo" },
-  { id: "g-5", name: "Eventos Sazonais", description: "Telas reservadas para campanhas pontuais", screens: 4, status: "inativo" },
+  {
+    id: "g-1",
+    name: "Hall Lobby",
+    description: "Telas de recepção em todas as unidades",
+    screens: 7,
+    status: "ativo",
+  },
+  {
+    id: "g-2",
+    name: "Restaurante Interno",
+    description: "Cardápio digital de praças de alimentação",
+    screens: 5,
+    status: "ativo",
+  },
+  {
+    id: "g-3",
+    name: "Vitrines Externas",
+    description: "Telas voltadas para o público externo",
+    screens: 9,
+    status: "ativo",
+  },
+  {
+    id: "g-4",
+    name: "Áreas Operacionais",
+    description: "Comunicação interna para colaboradores",
+    screens: 6,
+    status: "ativo",
+  },
+  {
+    id: "g-5",
+    name: "Eventos Sazonais",
+    description: "Telas reservadas para campanhas pontuais",
+    screens: 4,
+    status: "inativo",
+  },
 ];
 
 export const mockSchedules = Array.from({ length: 8 }).map((_, i) => ({
   id: `sch-${i + 1}`,
   campaign: campaignNames[i % campaignNames.length],
-  days: [["Seg", "Ter", "Qua", "Qui", "Sex"], ["Sáb", "Dom"], ["Seg", "Qua", "Sex"], ["Diariamente"]][i % 4],
+  days: [
+    ["Seg", "Ter", "Qua", "Qui", "Sex"],
+    ["Sáb", "Dom"],
+    ["Seg", "Qua", "Sex"],
+    ["Diariamente"],
+  ][i % 4],
   start: ["07:00", "10:00", "12:00", "14:00", "18:00"][i % 5],
   end: ["10:00", "12:00", "14:00", "18:00", "22:00"][i % 5],
   recurrence: ["Diária", "Semanal", "Mensal"][i % 3],

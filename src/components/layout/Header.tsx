@@ -28,7 +28,9 @@ export function Header() {
     <header className="sticky top-0 z-30 glass border-b border-border">
       <div className="flex h-16 items-center gap-4 px-6">
         <div className="flex flex-col">
-          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Signix · Painel</span>
+          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+            Signix · Painel
+          </span>
           <h1 className="font-display text-base font-semibold leading-none">{title}</h1>
         </div>
 
