@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/ui-kit/PageHeader";
 import { Panel } from "@/components/ui-kit/Panel";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui-kit/States";
 import { useMedia, useCampaigns } from "@/lib/hooks/use-supabase-data";
+import { applyMediaFallback, getMediaUrlCandidates } from "@/lib/media-url";
 import {
   Play,
   SkipBack,
@@ -28,6 +29,7 @@ function PreviewPage() {
   const [idx, setIdx] = useState(0);
   const [orient, setOrient] = useState<"horizontal" | "vertical">("horizontal");
   const current = items[idx];
+  const currentSources = current ? getMediaUrlCandidates(current.public_url, current.thumbnail_url) : [];
 
   if (isLoading) return <LoadingState />;
   if (error) return <ErrorState error={error} />;
@@ -88,8 +90,17 @@ function PreviewPage() {
               orient === "horizontal" ? "aspect-video w-full" : "aspect-[9/16] max-w-sm"
             }`}
           >
-            {current.public_url ? (
-              <img src={current.public_url} alt="" className="w-full h-full object-cover" />
+            {currentSources.length > 0 ? (
+              <img
+                key={`${current.id}-${currentSources[0]}`}
+                src={currentSources[0]}
+                data-sources={JSON.stringify(currentSources)}
+                data-source-index="0"
+                alt={current.name}
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+                onError={(e) => applyMediaFallback(e.currentTarget)}
+              />
             ) : (
               <div className="w-full h-full grid place-items-center text-white/40">
                 <ImageIcon className="h-16 w-16" />
@@ -136,7 +147,18 @@ function PreviewPage() {
                   >
                     <span className="text-[11px] font-mono text-muted-foreground w-5">#{i + 1}</span>
                     <div className="h-9 w-14 rounded overflow-hidden bg-muted shrink-0">
-                      {m.thumbnail_url && <img src={m.thumbnail_url} alt="" className="w-full h-full object-cover" />}
+                      {getMediaUrlCandidates(m.thumbnail_url, m.public_url)[0] && (
+                        <img
+                          src={getMediaUrlCandidates(m.thumbnail_url, m.public_url)[0]}
+                          data-sources={JSON.stringify(getMediaUrlCandidates(m.thumbnail_url, m.public_url))}
+                          data-source-index="0"
+                          alt={m.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => applyMediaFallback(e.currentTarget)}
+                        />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate">{m.name}</p>
