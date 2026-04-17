@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Tv, Maximize2, Volume2, Wifi } from "lucide-react";
-import { mockMedia } from "@/lib/mock-data";
+import { Tv, Maximize2, Volume2, Wifi, Image as ImageIcon } from "lucide-react";
+import { useMedia, useCampaigns } from "@/lib/hooks/use-supabase-data";
 
 export const Route = createFileRoute("/player")({
   head: () => ({ meta: [{ title: "Player — Signix" }] }),
@@ -9,36 +9,68 @@ export const Route = createFileRoute("/player")({
 });
 
 function PlayerPage() {
-  const items = mockMedia.filter((m) => m.type === "imagem" || m.type === "banner").slice(0, 6);
+  const { data: media = [] } = useMedia();
+  const { data: campaigns = [] } = useCampaigns();
+  const items = media.filter((m) => m.public_url).slice(0, 6);
+  const activeCampaign = campaigns.find((c) => c.status === "active") ?? campaigns[0];
+
   const [idx, setIdx] = useState(0);
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
+    if (items.length === 0) return;
     const t = setInterval(() => setIdx((i) => (i + 1) % items.length), 5000);
-    const c = setInterval(() => setNow(new Date()), 1000);
-    return () => { clearInterval(t); clearInterval(c); };
+    return () => clearInterval(t);
   }, [items.length]);
 
+  useEffect(() => {
+    const c = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(c);
+  }, []);
+
   const current = items[idx];
+
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen w-screen bg-black text-white grid place-items-center">
+        <div className="text-center">
+          <ImageIcon className="h-16 w-16 mx-auto text-white/30" />
+          <p className="mt-4 text-lg">Nenhuma mídia disponível para reprodução</p>
+          <Link to="/app/midias" className="mt-6 inline-block text-primary hover:underline text-sm">
+            Adicionar mídias →
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-screen bg-black text-white flex flex-col overflow-hidden">
       <div className="absolute inset-0">
-        <img src={current.url} alt="" className="w-full h-full object-cover transition-opacity duration-1000" key={current.id} />
+        <img
+          src={current.public_url ?? ""}
+          alt=""
+          className="w-full h-full object-cover transition-opacity duration-1000"
+          key={current.id}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
       </div>
 
       <div className="relative flex items-center justify-between p-6">
         <div className="flex items-center gap-2 rounded-full bg-black/40 backdrop-blur-md px-3 py-1.5 ring-1 ring-white/10">
           <Tv className="h-4 w-4 text-white/80" />
-          <span className="text-xs font-medium">Signix Player · Tela 04 · Hall Principal</span>
+          <span className="text-xs font-medium">Signix Player</span>
           <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-emerald-400">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 pulse-dot" /> ONLINE
           </span>
         </div>
         <div className="flex items-center gap-3 text-xs text-white/80">
-          <span className="inline-flex items-center gap-1"><Wifi className="h-3.5 w-3.5" /> 87 Mbps</span>
-          <span className="inline-flex items-center gap-1"><Volume2 className="h-3.5 w-3.5" /> 60%</span>
+          <span className="inline-flex items-center gap-1">
+            <Wifi className="h-3.5 w-3.5" /> {navigator.onLine ? "Online" : "Offline"}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Volume2 className="h-3.5 w-3.5" /> 60%
+          </span>
           <span className="font-mono">{now.toLocaleTimeString("pt-BR")}</span>
         </div>
       </div>
@@ -47,11 +79,13 @@ function PlayerPage() {
         <div className="max-w-3xl text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-white/60">Campanha em exibição</p>
           <h1 className="mt-3 font-display text-4xl lg:text-6xl font-bold leading-tight">
-            Black Friday 2025
+            {activeCampaign?.name ?? current.name}
           </h1>
-          <p className="mt-4 text-base lg:text-lg text-white/80 max-w-xl mx-auto">
-            Ofertas exclusivas em todas as unidades. Confira no balcão de atendimento.
-          </p>
+          {activeCampaign?.description && (
+            <p className="mt-4 text-base lg:text-lg text-white/80 max-w-xl mx-auto">
+              {activeCampaign.description}
+            </p>
+          )}
         </div>
       </div>
 
@@ -67,7 +101,9 @@ function PlayerPage() {
           ))}
         </div>
         <div className="mt-3 flex items-center justify-between text-[11px] text-white/60">
-          <span>Item {idx + 1} / {items.length} · {current.name}</span>
+          <span>
+            Item {idx + 1} / {items.length} · {current.name}
+          </span>
           <Link to="/app" className="inline-flex items-center gap-1 hover:text-white transition-colors">
             <Maximize2 className="h-3 w-3" /> Sair do modo player
           </Link>
