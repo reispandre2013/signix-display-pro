@@ -1,5 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Tv, Mail, ArrowLeft } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Tv, Mail, ArrowLeft, Loader2 } from "lucide-react";
+import { useState, FormEvent } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/recuperar-senha")({
   head: () => ({ meta: [{ title: "Recuperar senha — Signix" }] }),
@@ -7,6 +10,26 @@ export const Route = createFileRoute("/recuperar-senha")({
 });
 
 function RecoverPage() {
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    setSubmitting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setSubmitting(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Link de recuperação enviado! Verifique seu e-mail.");
+    setTimeout(() => navigate({ to: "/login" }), 1500);
+  };
+
   return (
     <div className="min-h-screen grid place-items-center bg-background bg-mesh p-6">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-elegant">
@@ -21,20 +44,27 @@ function RecoverPage() {
           Informe seu e-mail. Enviaremos um link seguro para redefinir sua senha.
         </p>
 
-        <form onSubmit={(e) => e.preventDefault()} className="mt-6 space-y-4">
+        <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">E-mail</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="voce@empresa.com"
                 className="w-full rounded-lg border border-input bg-surface pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-smooth"
               />
             </div>
           </div>
-          <button className="w-full rounded-lg bg-gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow hover:opacity-95 transition-smooth">
-            Enviar link de recuperação
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow hover:opacity-95 transition-smooth disabled:opacity-60"
+          >
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enviar link de recuperação"}
           </button>
         </form>
 
