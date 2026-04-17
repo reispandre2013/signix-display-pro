@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { AppShell } from "@/components/layout/AppShell";
 import { getCurrentSession } from "@/services/auth-service";
-import { hasSupabaseEnv } from "@/integrations/supabase/client";
+import { hasSupabaseEnv } from "@/lib/supabase-client";
 
 export const Route = createFileRoute("/app")({
   head: () => ({ meta: [{ title: "Painel — Signix" }] }),

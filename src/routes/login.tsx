@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Tv, Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useState, FormEvent } from "react";
 import { signInWithPassword } from "@/services/auth-service";
-import { hasSupabaseEnv } from "@/integrations/supabase/client";
+import { hasSupabaseEnv } from "@/lib/supabase-client";
 
 export const Route = createFileRoute("/login")({
   head: () => ({

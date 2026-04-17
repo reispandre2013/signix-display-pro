@@ -1,5 +1,8 @@
-import { Search, Bell, ChevronDown, HelpCircle, Plus } from "lucide-react";
-import { Link, useLocation } from "@tanstack/react-router";
+import { Search, Bell, ChevronDown, HelpCircle, Plus, LogOut } from "lucide-react";
+import { Link, useLocation, useRouter } from "@tanstack/react-router";
+import { useProfileQuery, useSignageEnabled } from "@/hooks/use-signage";
+import { roleLabel } from "@/lib/signage-queries";
+import { signOut } from "@/services/auth-service";
 
 const breadcrumbs: Record<string, string> = {
   "/app": "Dashboard",
@@ -20,9 +23,35 @@ const breadcrumbs: Record<string, string> = {
   "/app/configuracoes": "Configurações gerais",
 };
 
+function initials(name: string) {
+  return (
+    name
+      .split(" ")
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "—"
+  );
+}
+
 export function Header() {
   const { pathname } = useLocation();
+  const router = useRouter();
   const title = breadcrumbs[pathname] ?? "Signix";
+  const hasBackend = useSignageEnabled();
+  const { data: profile } = useProfileQuery();
+
+  const displayName = profile?.name ?? (hasBackend ? "Usuário" : "Preview");
+  const displayRole = profile ? roleLabel(profile.role) : hasBackend ? "—" : "Modo preview";
+
+  const onSignOut = async () => {
+    try {
+      await signOut();
+      await router.navigate({ to: "/login" });
+    } catch (e) {
+      console.error("[Signix] signOut", e);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-30 glass border-b border-border">
@@ -46,10 +75,16 @@ export function Header() {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          <button className="hidden md:inline-flex items-center gap-1.5 rounded-md bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-glow hover:opacity-90 transition-smooth">
+          <Link
+            to="/app/campanhas"
+            className="hidden md:inline-flex items-center gap-1.5 rounded-md bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-glow hover:opacity-90 transition-smooth"
+          >
             <Plus className="h-3.5 w-3.5" /> Nova campanha
-          </button>
-          <button className="h-9 w-9 grid place-items-center rounded-md border border-border hover:bg-surface transition-smooth">
+          </Link>
+          <button
+            type="button"
+            className="hidden md:grid h-9 w-9 place-items-center rounded-md border border-border hover:bg-surface transition-smooth"
+          >
             <HelpCircle className="h-4 w-4 text-muted-foreground" />
           </button>
           <Link
@@ -60,14 +95,24 @@ export function Header() {
             <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-background" />
           </Link>
           <div className="ml-2 flex items-center gap-2.5 rounded-lg border border-border bg-surface pl-1.5 pr-2.5 py-1">
-            <div className="h-7 w-7 rounded-md bg-gradient-primary grid place-items-center text-xs font-bold text-primary-foreground">
-              AS
+            <div className="h-7 w-7 rounded-md bg-gradient-primary grid place-items-center text-[10px] font-bold text-primary-foreground">
+              {initials(displayName)}
             </div>
             <div className="hidden sm:flex flex-col leading-tight">
-              <span className="text-xs font-semibold">Ana Souza</span>
-              <span className="text-[10px] text-muted-foreground">Admin Master</span>
+              <span className="text-xs font-semibold">{displayName}</span>
+              <span className="text-[10px] text-muted-foreground">{displayRole}</span>
             </div>
-            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+            {hasBackend && profile && (
+              <button
+                type="button"
+                title="Sair"
+                onClick={() => void onSignOut()}
+                className="p-1 rounded-md hover:bg-accent text-muted-foreground"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
           </div>
         </div>
       </div>

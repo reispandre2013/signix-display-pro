@@ -1,0 +1,8 @@
+# Configuração local do Supabase CLI (ajuste o project_id ao vincular ao projeto remoto).
+project_id = "SEU_PROJECT_ID"
+
+[api]
+enabled = true
+
+[db]
+major_version = 15

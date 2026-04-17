@@ -1,5 +1,5 @@
 import type { Session } from "@supabase/supabase-js";
-import { hasSupabaseEnv, supabase } from "@/integrations/supabase/client";
+import { getSupabase, hasSupabaseEnv } from "@/lib/supabase-client";
 
 export interface SignInPayload {
   email: string;
@@ -7,6 +7,7 @@ export interface SignInPayload {
 }
 
 export async function signInWithPassword(payload: SignInPayload): Promise<Session | null> {
+  const supabase = getSupabase();
   if (!hasSupabaseEnv || !supabase) {
     return null;
   }
@@ -24,6 +25,7 @@ export async function signInWithPassword(payload: SignInPayload): Promise<Sessio
 }
 
 export async function getCurrentSession(): Promise<Session | null> {
+  const supabase = getSupabase();
   if (!hasSupabaseEnv || !supabase) {
     return null;
   }
@@ -36,6 +38,7 @@ export async function getCurrentSession(): Promise<Session | null> {
 }
 
 export async function signOut(): Promise<void> {
+  const supabase = getSupabase();
   if (!hasSupabaseEnv || !supabase) {
     return;
   }

@@ -1,6 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { PageHeader } from "@/components/ui-kit/PageHeader";
 import { Panel } from "@/components/ui-kit/Panel";
+import { EmptyPanel, ErrorPanel, LoadingPanel, PreviewModeBanner } from "@/components/ui-kit/data-states";
+import {
+  useCampaignsQuery,
+  usePlaybackReportQuery,
+  useProfileQuery,
+  useScreensQuery,
+  useSignageEnabled,
+} from "@/hooks/use-signage";
 import {
   Bar,
   BarChart,
@@ -12,8 +21,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { exhibitionsByDay, statusByUnit, mockScreens, mockCampaigns } from "@/lib/mock-data";
 import { Download, Filter } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export const Route = createFileRoute("/app/relatorios")({
   head: () => ({ meta: [{ title: "Relatórios — Signix" }] }),
@@ -27,7 +37,116 @@ const tooltipStyle = {
   fontSize: 12,
 };
 
+type ScreenRow = {
+  id: string;
+  is_online: boolean;
+  device_status: string;
+  units: { name: string } | null;
+};
+
 function ReportsPage() {
+  const hasBackend = useSignageEnabled();
+  const { data: profile, isLoading: lp, error: pe, refetch: rfP } = useProfileQuery();
+  const orgId = profile?.organization_id;
+
+  const sinceIso = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 14);
+    return d.toISOString();
+  }, []);
+
+  const { data: playback = [], isLoading: lpb, error: pbe, refetch: rfPb } = usePlaybackReportQuery(
+    orgId,
+    sinceIso,
+  );
+  const { data: screens = [], isLoading: lsc, error: sce, refetch: rfSc } = useScreensQuery(orgId);
+  const { data: campaigns = [], isLoading: lcm, error: cme, refetch: rfCm } = useCampaignsQuery(orgId);
+
+  const typedScreens = screens as ScreenRow[];
+
+  const exhibitionsByDay = useMemo(() => {
+    const map = new Map<string, { exibicoes: number; falhas: number }>();
+    for (let i = 13; i >= 0; i -= 1) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = format(d, "dd/MM");
+      map.set(key, { exibicoes: 0, falhas: 0 });
+    }
+    for (const row of playback as { played_at: string; playback_status: string }[]) {
+      const key = format(new Date(row.played_at), "dd/MM");
+      if (!map.has(key)) map.set(key, { exibicoes: 0, falhas: 0 });
+      const cur = map.get(key)!;
+      if (row.playback_status === "failed" || row.playback_status === "skipped") cur.falhas += 1;
+      else cur.exibicoes += 1;
+    }
+    return Array.from(map.entries()).map(([date, v]) => ({ date, ...v }));
+  }, [playback]);
+
+  const statusByUnit = useMemo(() => {
+    const acc = new Map<string, { online: number; offline: number }>();
+    for (const s of typedScreens) {
+      const name = s.units?.name ?? "—";
+      if (!acc.has(name)) acc.set(name, { online: 0, offline: 0 });
+      const v = acc.get(name)!;
+      if (s.is_online) v.online += 1;
+      else v.offline += 1;
+    }
+    return Array.from(acc.entries()).map(([name, v]) => ({
+      name: name.replace(/^Filial /, "").replace(/^Matriz /, ""),
+      ...v,
+    }));
+  }, [typedScreens]);
+
+  const totals = useMemo(() => {
+    let ex = 0;
+    let fail = 0;
+    for (const row of playback as { playback_status: string }[]) {
+      if (row.playback_status === "failed" || row.playback_status === "skipped") fail += 1;
+      else ex += 1;
+    }
+    const online = typedScreens.filter((s) => s.is_online).length;
+    return { ex, fail, screens: typedScreens.length, online };
+  }, [playback, typedScreens]);
+
+  const loading = lp || lpb || lsc || lcm;
+  const err = pe || pbe || sce || cme;
+
+  if (!hasBackend) {
+    return (
+      <div className="space-y-6">
+        <PreviewModeBanner />
+        <PageHeader title="Relatórios" subtitle="Modo preview." />
+        <EmptyPanel title="Relatórios" hint="Conecte o Supabase para métricas ao vivo." />
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Relatórios" subtitle="Carregando…" />
+        <LoadingPanel />
+      </div>
+    );
+  }
+
+  if (err) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Relatórios" subtitle="Erro" />
+        <ErrorPanel
+          message={err.message}
+          onRetry={() => {
+            void rfP();
+            void rfPb();
+            void rfSc();
+            void rfCm();
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -35,10 +154,16 @@ function ReportsPage() {
         subtitle="Indicadores de exibição, falhas e performance da rede."
         actions={
           <>
-            <button className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium hover:bg-accent">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium hover:bg-accent"
+            >
               <Filter className="h-3.5 w-3.5" /> Filtros
             </button>
-            <button className="inline-flex items-center gap-1.5 rounded-md bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-glow">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-md bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-glow"
+            >
               <Download className="h-3.5 w-3.5" /> Exportar PDF
             </button>
           </>
@@ -47,10 +172,10 @@ function ReportsPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { l: "Exibições totais", v: "284.5k", d: "+12% vs período anterior" },
-          { l: "Tempo total exibido", v: "1.842h", d: "76 dias acumulados" },
-          { l: "Falhas de reprodução", v: "127", d: "-23% vs período" },
-          { l: "Telas mais ativas", v: mockScreens.length, d: "Acima de 95% saúde" },
+          { l: "Exibições (14d)", v: totals.ex.toLocaleString("pt-BR"), d: "Playback logs no período" },
+          { l: "Falhas / pulos", v: totals.fail.toLocaleString("pt-BR"), d: "Status failed ou skipped" },
+          { l: "Telas cadastradas", v: String(totals.screens), d: `${totals.online} online` },
+          { l: "Campanhas", v: String(campaigns.length), d: "Total na organização" },
         ].map((s) => (
           <div key={s.l} className="rounded-xl border border-border bg-card p-4 shadow-card">
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.l}</p>
@@ -94,7 +219,7 @@ function ReportsPage() {
         <Panel title="Status por unidade">
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={statusByUnit}>
+              <BarChart data={statusByUnit.length ? statusByUnit : [{ name: "—", online: 0, offline: 0 }]}>
                 <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.28 0.025 252 / 30%)" />
                 <XAxis
                   dataKey="name"
@@ -124,41 +249,38 @@ function ReportsPage() {
         </Panel>
       </div>
 
-      <Panel title="Top campanhas por exibição" bodyClassName="p-0">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-surface/50 text-[11px] uppercase tracking-wider text-muted-foreground">
-              <th className="px-5 py-3 text-left">Campanha</th>
-              <th className="px-5 py-3 text-left">Telas</th>
-              <th className="px-5 py-3 text-left">Exibições</th>
-              <th className="px-5 py-3 text-left">Tempo total</th>
-              <th className="px-5 py-3 text-left">Performance</th>
-            </tr>
-          </thead>
-          <tbody>
-            {mockCampaigns.map((c, i) => (
-              <tr key={c.id} className="border-b border-border/50 hover:bg-surface/40">
-                <td className="px-5 py-3.5 font-medium">{c.name}</td>
-                <td className="px-5 py-3.5">{c.screens}</td>
-                <td className="px-5 py-3.5 font-mono">
-                  {(15000 - i * 1200).toLocaleString("pt-BR")}
-                </td>
-                <td className="px-5 py-3.5 font-mono">{120 - i * 8}h</td>
-                <td className="px-5 py-3.5">
-                  <div className="flex items-center gap-2 w-32">
-                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-primary"
-                        style={{ width: `${100 - i * 10}%` }}
-                      />
-                    </div>
-                    <span className="text-[11px] font-mono w-8 text-right">{100 - i * 10}%</span>
-                  </div>
-                </td>
+      <Panel title="Campanhas (cadastro)" bodyClassName="p-0">
+        {campaigns.length === 0 ? (
+          <div className="p-6">
+            <EmptyPanel title="Sem campanhas" hint="" />
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-surface/50 text-[11px] uppercase tracking-wider text-muted-foreground">
+                <th className="px-5 py-3 text-left">Campanha</th>
+                <th className="px-5 py-3 text-left">Prioridade</th>
+                <th className="px-5 py-3 text-left">Status</th>
+                <th className="px-5 py-3 text-left">Período</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {(campaigns as { id: string; name: string; priority: number; status: string; start_at: string; end_at: string }[]).map(
+                (c) => (
+                  <tr key={c.id} className="border-b border-border/50 hover:bg-surface/40">
+                    <td className="px-5 py-3.5 font-medium">{c.name}</td>
+                    <td className="px-5 py-3.5">{c.priority}</td>
+                    <td className="px-5 py-3.5">{c.status}</td>
+                    <td className="px-5 py-3.5 font-mono text-xs">
+                      {format(new Date(c.start_at), "dd/MM/yy", { locale: ptBR })} –{" "}
+                      {format(new Date(c.end_at), "dd/MM/yy", { locale: ptBR })}
+                    </td>
+                  </tr>
+                ),
+              )}
+            </tbody>
+          </table>
+        )}
       </Panel>
     </div>
   );

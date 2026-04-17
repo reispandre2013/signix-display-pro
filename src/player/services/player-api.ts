@@ -1,8 +1,5 @@
-import { hasSupabaseEnv } from "@/integrations/supabase/client";
+import { getSupabasePublishableKey, getSupabaseUrl, hasSupabaseEnv } from "@/lib/supabase-client";
 import type { PairingResult, PlaybackLog, PlayerPayload } from "@/player/types";
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 interface ResolveCampaignResult {
   screen_id: string;
@@ -16,6 +13,7 @@ interface ResolveCampaignResult {
 }
 
 function buildFunctionUrl(name: string): string {
+  const supabaseUrl = getSupabaseUrl();
   if (!supabaseUrl) {
     throw new Error("SUPABASE_URL não configurada");
   }
@@ -23,6 +21,8 @@ function buildFunctionUrl(name: string): string {
 }
 
 async function postFunction<TReq, TRes>(name: string, payload: TReq): Promise<TRes> {
+  const supabaseUrl = getSupabaseUrl();
+  const supabaseAnonKey = getSupabasePublishableKey();
   if (!hasSupabaseEnv || !supabaseUrl || !supabaseAnonKey) {
     throw new Error("Supabase não configurado para o player.");
   }

@@ -5,6 +5,7 @@ type Tone =
   | "offline"
   | "warning"
   | "syncing"
+  | "maintenance"
   | "neutral"
   | "primary"
   | "success"
@@ -16,6 +17,7 @@ const tones: Record<Tone, string> = {
   offline: "bg-destructive/10 text-destructive ring-destructive/30",
   warning: "bg-warning/10 text-warning ring-warning/30",
   syncing: "bg-info/10 text-info ring-info/30",
+  maintenance: "bg-muted text-muted-foreground ring-border",
   neutral: "bg-muted text-muted-foreground ring-border",
   primary: "bg-primary/10 text-primary ring-primary/30",
   success: "bg-success/10 text-success ring-success/30",
@@ -28,6 +30,7 @@ const labels: Record<string, string> = {
   offline: "Offline",
   warning: "Atenção",
   syncing: "Sincronizando",
+  maintenance: "Manutenção",
 };
 
 export function StatusBadge({
