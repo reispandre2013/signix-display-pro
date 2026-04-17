@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Tv, Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
-import { useState, FormEvent } from "react";
+import { Tv, Mail, Lock, ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useState, FormEvent, useEffect } from "react";
+import { toast } from "sonner";
+import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -14,10 +16,31 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const [show, setShow] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
-  const onSubmit = (e: FormEvent) => {
+  const { signIn, session, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && session) navigate({ to: "/app", replace: true });
+  }, [loading, session, navigate]);
+
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    navigate({ to: "/app" });
+    if (!email || !password) {
+      toast.error("Preencha e-mail e senha.");
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await signIn(email.trim(), password);
+    setSubmitting(false);
+    if (error) {
+      toast.error(error.message ?? "Não foi possível entrar.");
+      return;
+    }
+    toast.success("Bem-vindo!");
+    navigate({ to: "/app", replace: true });
   };
 
   return (
@@ -71,7 +94,21 @@ function LoginPage() {
           <p className="text-sm text-muted-foreground mt-1">Acesse seu painel administrativo.</p>
 
           <form onSubmit={onSubmit} className="mt-8 space-y-4">
-            <Field icon={Mail} label="E-mail" type="email" placeholder="voce@empresa.com" defaultValue="ana@signix.com" />
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">E-mail</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="voce@empresa.com"
+                  className="w-full rounded-lg border border-input bg-surface pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-smooth"
+                />
+              </div>
+            </div>
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Senha</label>
@@ -81,7 +118,11 @@ function LoginPage() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type={show ? "text" : "password"}
-                  defaultValue="••••••••"
+                  required
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
                   className="w-full rounded-lg border border-input bg-surface pl-9 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-smooth"
                 />
                 <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -90,13 +131,12 @@ function LoginPage() {
               </div>
             </div>
 
-            <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" className="rounded border-border bg-surface text-primary focus:ring-ring" />
-              <span className="text-muted-foreground">Manter conectado por 30 dias</span>
-            </label>
-
-            <button type="submit" className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow hover:opacity-95 transition-smooth">
-              Entrar no painel <ArrowRight className="h-4 w-4" />
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow hover:opacity-95 transition-smooth disabled:opacity-60"
+            >
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Entrar no painel <ArrowRight className="h-4 w-4" /></>}
             </button>
 
             <div className="relative my-6">
@@ -104,26 +144,14 @@ function LoginPage() {
               <div className="relative flex justify-center"><span className="bg-background px-3 text-[11px] uppercase tracking-widest text-muted-foreground">ou</span></div>
             </div>
 
-            <Link to="/pareamento" className="block w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-center text-sm font-medium hover:bg-accent transition-smooth">
-              Parear um novo player
+            <Link to="/signup" className="block w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-center text-sm font-medium hover:bg-accent transition-smooth">
+              Criar nova conta
+            </Link>
+            <Link to="/pareamento" className="block w-full text-center text-xs text-muted-foreground hover:text-foreground transition-smooth">
+              Parear um novo player →
             </Link>
           </form>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function Field({ icon: Icon, label, ...rest }: { icon: typeof Mail; label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <div>
-      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">{label}</label>
-      <div className="relative">
-        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <input
-          {...rest}
-          className="w-full rounded-lg border border-input bg-surface pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-smooth"
-        />
       </div>
     </div>
   );
