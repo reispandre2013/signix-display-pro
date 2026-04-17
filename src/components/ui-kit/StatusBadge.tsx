@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-type Tone = "online" | "offline" | "warning" | "syncing" | "neutral" | "primary" | "success" | "destructive";
+type Tone = "online" | "offline" | "warning" | "syncing" | "neutral" | "primary" | "success" | "destructive" | "info";
 
 const tones: Record<Tone, string> = {
   online: "bg-success/10 text-success ring-success/30",
@@ -11,6 +11,7 @@ const tones: Record<Tone, string> = {
   primary: "bg-primary/10 text-primary ring-primary/30",
   success: "bg-success/10 text-success ring-success/30",
   destructive: "bg-destructive/10 text-destructive ring-destructive/30",
+  info: "bg-info/10 text-info ring-info/30",
 };
 
 const labels: Record<string, string> = {

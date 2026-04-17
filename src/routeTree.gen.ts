@@ -16,9 +16,21 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppUsuariosRouteImport } from './routes/app.usuarios'
+import { Route as AppUnidadesRouteImport } from './routes/app.unidades'
 import { Route as AppTelasRouteImport } from './routes/app.telas'
+import { Route as AppRelatoriosRouteImport } from './routes/app.relatorios'
+import { Route as AppPreviewRouteImport } from './routes/app.preview'
+import { Route as AppPlaylistsRouteImport } from './routes/app.playlists'
 import { Route as AppMonitoramentoRouteImport } from './routes/app.monitoramento'
+import { Route as AppMidiasRouteImport } from './routes/app.midias'
+import { Route as AppGruposRouteImport } from './routes/app.grupos'
+import { Route as AppEmpresasRouteImport } from './routes/app.empresas'
+import { Route as AppConfiguracoesRouteImport } from './routes/app.configuracoes'
 import { Route as AppCampanhasRouteImport } from './routes/app.campanhas'
+import { Route as AppAuditoriaRouteImport } from './routes/app.auditoria'
+import { Route as AppAlertasRouteImport } from './routes/app.alertas'
+import { Route as AppAgendamentosRouteImport } from './routes/app.agendamentos'
 
 const RecuperarSenhaRoute = RecuperarSenhaRouteImport.update({
   id: '/recuperar-senha',
@@ -55,9 +67,34 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppUsuariosRoute = AppUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppUnidadesRoute = AppUnidadesRouteImport.update({
+  id: '/unidades',
+  path: '/unidades',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppTelasRoute = AppTelasRouteImport.update({
   id: '/telas',
   path: '/telas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRelatoriosRoute = AppRelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPreviewRoute = AppPreviewRouteImport.update({
+  id: '/preview',
+  path: '/preview',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPlaylistsRoute = AppPlaylistsRouteImport.update({
+  id: '/playlists',
+  path: '/playlists',
   getParentRoute: () => AppRoute,
 } as any)
 const AppMonitoramentoRoute = AppMonitoramentoRouteImport.update({
@@ -65,9 +102,44 @@ const AppMonitoramentoRoute = AppMonitoramentoRouteImport.update({
   path: '/monitoramento',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMidiasRoute = AppMidiasRouteImport.update({
+  id: '/midias',
+  path: '/midias',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGruposRoute = AppGruposRouteImport.update({
+  id: '/grupos',
+  path: '/grupos',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEmpresasRoute = AppEmpresasRouteImport.update({
+  id: '/empresas',
+  path: '/empresas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCampanhasRoute = AppCampanhasRouteImport.update({
   id: '/campanhas',
   path: '/campanhas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAuditoriaRoute = AppAuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAlertasRoute = AppAlertasRouteImport.update({
+  id: '/alertas',
+  path: '/alertas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAgendamentosRoute = AppAgendamentosRouteImport.update({
+  id: '/agendamentos',
+  path: '/agendamentos',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -78,9 +150,21 @@ export interface FileRoutesByFullPath {
   '/pareamento': typeof PareamentoRoute
   '/player': typeof PlayerRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/app/agendamentos': typeof AppAgendamentosRoute
+  '/app/alertas': typeof AppAlertasRoute
+  '/app/auditoria': typeof AppAuditoriaRoute
   '/app/campanhas': typeof AppCampanhasRoute
+  '/app/configuracoes': typeof AppConfiguracoesRoute
+  '/app/empresas': typeof AppEmpresasRoute
+  '/app/grupos': typeof AppGruposRoute
+  '/app/midias': typeof AppMidiasRoute
   '/app/monitoramento': typeof AppMonitoramentoRoute
+  '/app/playlists': typeof AppPlaylistsRoute
+  '/app/preview': typeof AppPreviewRoute
+  '/app/relatorios': typeof AppRelatoriosRoute
   '/app/telas': typeof AppTelasRoute
+  '/app/unidades': typeof AppUnidadesRoute
+  '/app/usuarios': typeof AppUsuariosRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
@@ -89,9 +173,21 @@ export interface FileRoutesByTo {
   '/pareamento': typeof PareamentoRoute
   '/player': typeof PlayerRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/app/agendamentos': typeof AppAgendamentosRoute
+  '/app/alertas': typeof AppAlertasRoute
+  '/app/auditoria': typeof AppAuditoriaRoute
   '/app/campanhas': typeof AppCampanhasRoute
+  '/app/configuracoes': typeof AppConfiguracoesRoute
+  '/app/empresas': typeof AppEmpresasRoute
+  '/app/grupos': typeof AppGruposRoute
+  '/app/midias': typeof AppMidiasRoute
   '/app/monitoramento': typeof AppMonitoramentoRoute
+  '/app/playlists': typeof AppPlaylistsRoute
+  '/app/preview': typeof AppPreviewRoute
+  '/app/relatorios': typeof AppRelatoriosRoute
   '/app/telas': typeof AppTelasRoute
+  '/app/unidades': typeof AppUnidadesRoute
+  '/app/usuarios': typeof AppUsuariosRoute
   '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -102,9 +198,21 @@ export interface FileRoutesById {
   '/pareamento': typeof PareamentoRoute
   '/player': typeof PlayerRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/app/agendamentos': typeof AppAgendamentosRoute
+  '/app/alertas': typeof AppAlertasRoute
+  '/app/auditoria': typeof AppAuditoriaRoute
   '/app/campanhas': typeof AppCampanhasRoute
+  '/app/configuracoes': typeof AppConfiguracoesRoute
+  '/app/empresas': typeof AppEmpresasRoute
+  '/app/grupos': typeof AppGruposRoute
+  '/app/midias': typeof AppMidiasRoute
   '/app/monitoramento': typeof AppMonitoramentoRoute
+  '/app/playlists': typeof AppPlaylistsRoute
+  '/app/preview': typeof AppPreviewRoute
+  '/app/relatorios': typeof AppRelatoriosRoute
   '/app/telas': typeof AppTelasRoute
+  '/app/unidades': typeof AppUnidadesRoute
+  '/app/usuarios': typeof AppUsuariosRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
@@ -116,9 +224,21 @@ export interface FileRouteTypes {
     | '/pareamento'
     | '/player'
     | '/recuperar-senha'
+    | '/app/agendamentos'
+    | '/app/alertas'
+    | '/app/auditoria'
     | '/app/campanhas'
+    | '/app/configuracoes'
+    | '/app/empresas'
+    | '/app/grupos'
+    | '/app/midias'
     | '/app/monitoramento'
+    | '/app/playlists'
+    | '/app/preview'
+    | '/app/relatorios'
     | '/app/telas'
+    | '/app/unidades'
+    | '/app/usuarios'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -127,9 +247,21 @@ export interface FileRouteTypes {
     | '/pareamento'
     | '/player'
     | '/recuperar-senha'
+    | '/app/agendamentos'
+    | '/app/alertas'
+    | '/app/auditoria'
     | '/app/campanhas'
+    | '/app/configuracoes'
+    | '/app/empresas'
+    | '/app/grupos'
+    | '/app/midias'
     | '/app/monitoramento'
+    | '/app/playlists'
+    | '/app/preview'
+    | '/app/relatorios'
     | '/app/telas'
+    | '/app/unidades'
+    | '/app/usuarios'
     | '/app'
   id:
     | '__root__'
@@ -139,9 +271,21 @@ export interface FileRouteTypes {
     | '/pareamento'
     | '/player'
     | '/recuperar-senha'
+    | '/app/agendamentos'
+    | '/app/alertas'
+    | '/app/auditoria'
     | '/app/campanhas'
+    | '/app/configuracoes'
+    | '/app/empresas'
+    | '/app/grupos'
+    | '/app/midias'
     | '/app/monitoramento'
+    | '/app/playlists'
+    | '/app/preview'
+    | '/app/relatorios'
     | '/app/telas'
+    | '/app/unidades'
+    | '/app/usuarios'
     | '/app/'
   fileRoutesById: FileRoutesById
 }
@@ -205,11 +349,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/usuarios': {
+      id: '/app/usuarios'
+      path: '/usuarios'
+      fullPath: '/app/usuarios'
+      preLoaderRoute: typeof AppUsuariosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/unidades': {
+      id: '/app/unidades'
+      path: '/unidades'
+      fullPath: '/app/unidades'
+      preLoaderRoute: typeof AppUnidadesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/telas': {
       id: '/app/telas'
       path: '/telas'
       fullPath: '/app/telas'
       preLoaderRoute: typeof AppTelasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/relatorios': {
+      id: '/app/relatorios'
+      path: '/relatorios'
+      fullPath: '/app/relatorios'
+      preLoaderRoute: typeof AppRelatoriosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/preview': {
+      id: '/app/preview'
+      path: '/preview'
+      fullPath: '/app/preview'
+      preLoaderRoute: typeof AppPreviewRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/playlists': {
+      id: '/app/playlists'
+      path: '/playlists'
+      fullPath: '/app/playlists'
+      preLoaderRoute: typeof AppPlaylistsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/monitoramento': {
@@ -219,6 +398,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMonitoramentoRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/midias': {
+      id: '/app/midias'
+      path: '/midias'
+      fullPath: '/app/midias'
+      preLoaderRoute: typeof AppMidiasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/grupos': {
+      id: '/app/grupos'
+      path: '/grupos'
+      fullPath: '/app/grupos'
+      preLoaderRoute: typeof AppGruposRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/empresas': {
+      id: '/app/empresas'
+      path: '/empresas'
+      fullPath: '/app/empresas'
+      preLoaderRoute: typeof AppEmpresasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/configuracoes': {
+      id: '/app/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/app/configuracoes'
+      preLoaderRoute: typeof AppConfiguracoesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/campanhas': {
       id: '/app/campanhas'
       path: '/campanhas'
@@ -226,20 +433,65 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCampanhasRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/auditoria': {
+      id: '/app/auditoria'
+      path: '/auditoria'
+      fullPath: '/app/auditoria'
+      preLoaderRoute: typeof AppAuditoriaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/alertas': {
+      id: '/app/alertas'
+      path: '/alertas'
+      fullPath: '/app/alertas'
+      preLoaderRoute: typeof AppAlertasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/agendamentos': {
+      id: '/app/agendamentos'
+      path: '/agendamentos'
+      fullPath: '/app/agendamentos'
+      preLoaderRoute: typeof AppAgendamentosRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppAgendamentosRoute: typeof AppAgendamentosRoute
+  AppAlertasRoute: typeof AppAlertasRoute
+  AppAuditoriaRoute: typeof AppAuditoriaRoute
   AppCampanhasRoute: typeof AppCampanhasRoute
+  AppConfiguracoesRoute: typeof AppConfiguracoesRoute
+  AppEmpresasRoute: typeof AppEmpresasRoute
+  AppGruposRoute: typeof AppGruposRoute
+  AppMidiasRoute: typeof AppMidiasRoute
   AppMonitoramentoRoute: typeof AppMonitoramentoRoute
+  AppPlaylistsRoute: typeof AppPlaylistsRoute
+  AppPreviewRoute: typeof AppPreviewRoute
+  AppRelatoriosRoute: typeof AppRelatoriosRoute
   AppTelasRoute: typeof AppTelasRoute
+  AppUnidadesRoute: typeof AppUnidadesRoute
+  AppUsuariosRoute: typeof AppUsuariosRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAgendamentosRoute: AppAgendamentosRoute,
+  AppAlertasRoute: AppAlertasRoute,
+  AppAuditoriaRoute: AppAuditoriaRoute,
   AppCampanhasRoute: AppCampanhasRoute,
+  AppConfiguracoesRoute: AppConfiguracoesRoute,
+  AppEmpresasRoute: AppEmpresasRoute,
+  AppGruposRoute: AppGruposRoute,
+  AppMidiasRoute: AppMidiasRoute,
   AppMonitoramentoRoute: AppMonitoramentoRoute,
+  AppPlaylistsRoute: AppPlaylistsRoute,
+  AppPreviewRoute: AppPreviewRoute,
+  AppRelatoriosRoute: AppRelatoriosRoute,
   AppTelasRoute: AppTelasRoute,
+  AppUnidadesRoute: AppUnidadesRoute,
+  AppUsuariosRoute: AppUsuariosRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
