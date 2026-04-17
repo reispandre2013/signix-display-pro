@@ -134,7 +134,16 @@ function MediaPage() {
                 >
                   <div className="relative aspect-video bg-surface overflow-hidden">
                     {m.thumbnail_url ? (
-                      <img src={m.thumbnail_url} alt={m.name} className="w-full h-full object-cover" loading="lazy" />
+                      <img
+                        src={toDirectUrl(m.thumbnail_url)}
+                        alt={m.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = "none";
+                        }}
+                      />
                     ) : (
                       <div className="w-full h-full grid place-items-center text-muted-foreground">
                         <Icon className="h-6 w-6" />
