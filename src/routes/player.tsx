@@ -5,7 +5,9 @@ import { AdminOverlay } from "@/player/components/admin-overlay";
 import { FallbackScreen } from "@/player/components/fallback-screen";
 import { LoadingScreen } from "@/player/components/loading-screen";
 import { PlaybackScreen } from "@/player/components/playback-screen";
+import { initAndroidTvShell } from "@/player/capacitor/android-shell";
 import { usePlayerRuntime } from "@/player/hooks/use-player-runtime";
+import { PLAYER_VERSION_LABEL } from "@/player/version";
 
 export const Route = createFileRoute("/player")({
   head: () => ({ meta: [{ title: "Player — Signix" }] }),
@@ -33,6 +35,10 @@ function PlayerPage() {
     resetPlayer,
   } = usePlayerRuntime();
   const [pairingLoading, setPairingLoading] = useState(false);
+
+  useEffect(() => {
+    void initAndroidTvShell();
+  }, []);
 
   useEffect(() => {
     if (document.fullscreenElement) return;
@@ -83,7 +89,7 @@ function PlayerPage() {
       <AdminOverlay
         visible={adminVisible}
         online={online}
-        version="signix-player-web@1.0.0"
+        version={PLAYER_VERSION_LABEL}
         lastSyncAt={lastSyncAt}
         lastError={lastError}
         settings={settings}

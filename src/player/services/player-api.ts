@@ -1,5 +1,6 @@
 import { getSupabasePublishableKey, getSupabaseUrl, hasSupabaseEnv } from "@/lib/supabase-client";
 import type { PairingResult, PlaybackLog, PlayerPayload } from "@/player/types";
+import { PLAYER_VERSION_LABEL } from "@/player/version";
 
 interface ResolveCampaignResult {
   screen_id: string;
@@ -59,7 +60,7 @@ export async function pairScreen(code: string, fingerprint: string): Promise<Pai
     deviceFingerprint: fingerprint,
     platform: navigator.platform,
     osName: navigator.userAgent,
-    playerVersion: "signix-player-web@1.0.0",
+    playerVersion: PLAYER_VERSION_LABEL,
   });
 
   if (!result.screen) {
@@ -105,7 +106,7 @@ export async function sendHeartbeat(params: {
 }): Promise<void> {
   await postFunction("heartbeat-screen", {
     screenId: params.screenId,
-    appVersion: "signix-player-web@1.0.0",
+    appVersion: PLAYER_VERSION_LABEL,
     networkStatus: params.networkStatus,
     deviceInfo: {
       userAgent: navigator.userAgent,

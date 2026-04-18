@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Signix Player TV</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <style>
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: #0a0a0f;
+        color: #e8e8ef;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        text-align: center;
+      }
+      code {
+        background: #1a1a24;
+        padding: 2px 8px;
+        border-radius: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <h1>Signix Player TV</h1>
+      <p>
+        O APK foi instalado <strong>sem</strong> URL do servidor no momento do
+        <code>npx cap sync</code>.<br />
+        No PC: crie <code>.env.capacitor</code> (veja <code>.env.capacitor.example</code>) com
+        <code>CAPACITOR_SERVER_URL=https://…/player</code>, rode
+        <code>npx cap sync android</code>, gere um <strong>novo APK</strong> e instale de novo na TV.
+      </p>
+      <p class="hint" style="margin-top: 16px; font-size: 13px; opacity: 0.85">
+        Guia: <code>README_INSTALL_TV.md</code> · detalhes: <code>docs/android-tv-player.md</code>
+      </p>
+    </div>
+  </body>
+</html>
