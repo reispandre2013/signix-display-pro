@@ -254,7 +254,8 @@ function PairScreenModal({
           orientation,
         },
       });
-      toast.success(`Tela "${res.screen_name}" pareada com sucesso!`);
+      const screenName = res?.screen_name ?? name;
+      toast.success(`Tela "${screenName}" pareada com sucesso!`);
       qc.invalidateQueries({ queryKey: ["screens", profile?.organization_id] });
       onClose();
     } catch (err) {
