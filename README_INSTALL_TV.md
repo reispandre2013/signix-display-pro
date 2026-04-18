@@ -54,6 +54,10 @@ Se isto **não** for feito antes do `cap sync`, o APK abre só o **placeholder**
 
 3. O ficheiro `.env.capacitor` está no **`.gitignore`** — não vai para o git.
 
+**Windows (Explorador de ficheiros):** o nome tem de ser exactamente `.env.capacitor` — não `.env.capacitor.txt`. Ative **Ver → Mostrar → Extensões de nome de ficheiro** e confirme. O ficheiro deve ficar na **mesma pasta** que `package.json` e `capacitor.config.ts` (raiz de `signix-display-pro`), não dentro de `android/`.
+
+Ao correr `npx cap sync android`, se a URL **não** for lida, aparece no terminal um aviso **`[Signix Player TV] CAPACITOR_SERVER_URL não encontrada`** com o caminho completo esperado do ficheiro — se não vir esse aviso e tiver criado o `.env.capacitor`, o sync encontrou a variável (ou o conteúdo do ficheiro está vazio / comentado).
+
 **Alternativa — variável de ambiente só na sessão:**
 
 **Windows (PowerShell):**

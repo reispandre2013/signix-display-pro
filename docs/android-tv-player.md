@@ -32,7 +32,7 @@ O projeto usa **TanStack Start** (SSR / worker Cloudflare). O build **não gera*
 https://SEU-DOMINIO/player
 ```
 
-**Antes de `npx cap sync`**, defina a URL de uma destas formas (por ordem o `capacitor.config.ts` usa: env → `.env.capacitor` → `.env`):
+**Antes de `npx cap sync`**, defina a URL de uma destas formas (por ordem o `capacitor.config.ts` usa: env → `.env.capacitor` → `.env`). Os ficheiros `.env*` são resolvidos a partir da pasta do projeto onde está `capacitor.config.ts` (o CLI procura essa pasta subindo a partir do diretório de trabalho atual, para não depender só de `process.cwd()`).
 
 1. **Recomendado:** ficheiro **`.env.capacitor`** na raiz (copie de `.env.capacitor.example`):
 
