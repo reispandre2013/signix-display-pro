@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Tv, Maximize2, Volume2, Wifi, Image as ImageIcon } from "lucide-react";
 import { applyMediaFallback, getMediaUrlCandidates } from "@/lib/media-url";
-import { getScreenContent } from "@/lib/server/player.functions";
+import { getScreenContent, heartbeatScreen } from "@/lib/server/player.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/player")({
   head: () => ({ meta: [{ title: "Player — Signix" }] }),
