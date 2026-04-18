@@ -259,8 +259,8 @@ function PairScreenModal({
           name,
           unit_id: unitId || null,
           orientation,
+          access_token: token,
         },
-        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res?.ok || !res.screen_id) throw new Error("Falha ao concluir o pareamento.");
       const screenName = res?.screen_name ?? name;
