@@ -1,8 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Tv, Wifi, RefreshCw, ArrowLeft, Cpu, Monitor, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { checkPairingStatus } from "@/lib/server/screens.functions";
+import { checkPairingStatus, createPairingCode } from "@/lib/server/screens.functions";
 
 export const Route = createFileRoute("/pareamento")({
   head: () => ({ meta: [{ title: "Pareamento de Player — Signix" }] }),
@@ -10,6 +9,7 @@ export const Route = createFileRoute("/pareamento")({
 });
 
 const STORAGE_KEY = "signix_pairing_code";
+const STORAGE_EXP_KEY = "signix_pairing_code_exp";
 
 function PairingPage() {
   const [code, setCode] = useState<string | null>(null);
@@ -17,32 +17,43 @@ function PairingPage() {
   const [paired, setPaired] = useState(false);
   const [codeError, setCodeError] = useState<string | null>(null);
 
-  // Gera ou recupera código de pareamento (anônimo, sem org)
+  // Gera código de pareamento via server function (bypass RLS, sem auth necessária)
   const generateCode = async () => {
     setLoading(true);
     setCodeError(null);
-    const newCode = `${randomChunk()}-${randomChunk()}`;
-    const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-    const { error } = await supabase
-      .from("pairing_codes")
-      .insert({ code: newCode, expires_at: expires });
-    if (!error) {
-      localStorage.setItem(STORAGE_KEY, newCode);
-      setCode(newCode);
-    } else {
+    try {
+      const res = await createPairingCode();
+      if (res?.code) {
+        localStorage.setItem(STORAGE_KEY, res.code);
+        if (res.expires_at) localStorage.setItem(STORAGE_EXP_KEY, res.expires_at);
+        setCode(res.code);
+      } else {
+        throw new Error("Resposta inválida do servidor.");
+      }
+    } catch (e) {
+      console.error("[pareamento] generateCode failed:", e);
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_EXP_KEY);
       setCode(null);
-      setCodeError("Não foi possível registrar o código de pareamento. Gere um novo código e tente novamente.");
+      setCodeError(
+        "Não foi possível registrar o código de pareamento. Verifique a conexão e tente novamente.",
+      );
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
+    const storedExp = localStorage.getItem(STORAGE_EXP_KEY);
+    const stillValid =
+      stored && storedExp && new Date(storedExp).getTime() > Date.now() + 30_000;
+    if (stillValid) {
       setCode(stored);
       setLoading(false);
     } else {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_EXP_KEY);
       generateCode();
     }
   }, []);
