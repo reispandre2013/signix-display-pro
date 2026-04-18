@@ -42,7 +42,7 @@ function MonitorPage() {
   useEffect(() => {
     const tick = async () => {
       try {
-        await reconcileFn({ data: {} });
+        await reconcileFn();
       } catch (e) {
         console.warn("[reconcile] falhou:", e);
       }
@@ -55,7 +55,7 @@ function MonitorPage() {
 
   const handleSync = async () => {
     try {
-      await reconcileFn({ data: {} }).catch(() => null);
+      await reconcileFn().catch(() => null);
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["screens", orgId] }),
         qc.invalidateQueries({ queryKey: ["units", orgId] }),
