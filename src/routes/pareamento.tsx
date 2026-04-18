@@ -16,6 +16,8 @@ function PairingPage() {
   const [loading, setLoading] = useState(true);
   const [paired, setPaired] = useState(false);
   const [codeError, setCodeError] = useState<string | null>(null);
+  const [screenId, setScreenId] = useState<string | null>(null);
+  const [redirectIn, setRedirectIn] = useState<number>(5);
 
   // Gera código de pareamento via server function (bypass RLS, sem auth necessária)
   const generateCode = async () => {
@@ -71,6 +73,11 @@ function PairingPage() {
         const res = await checkPairingStatus({ data: { code } });
         if (!cancelled && res?.paired) {
           setPaired(true);
+          if (res.screen_id) setScreenId(res.screen_id);
+          // limpa storage para próximo pareamento gerar código novo
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(STORAGE_EXP_KEY);
+          if (res.screen_id) localStorage.setItem("signix_screen_id", res.screen_id);
         }
       } catch {
         // silencia erros transitórios de rede
@@ -83,6 +90,17 @@ function PairingPage() {
       clearInterval(interval);
     };
   }, [code, paired]);
+
+  // Após pareamento: countdown e redireciona para /player
+  useEffect(() => {
+    if (!paired) return;
+    if (redirectIn <= 0) {
+      window.location.href = "/player";
+      return;
+    }
+    const t = setTimeout(() => setRedirectIn((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [paired, redirectIn]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background bg-mesh">
@@ -107,8 +125,22 @@ function PairingPage() {
               </div>
               <h1 className="mt-6 font-display text-3xl lg:text-4xl font-bold leading-tight">
                 Tudo pronto!
-                <br />Aguardando primeira campanha…
+                <br />Iniciando reprodução em {redirectIn}s…
               </h1>
+              <p className="mt-3 text-muted-foreground text-sm">
+                Você será redirecionado automaticamente para o player.
+              </p>
+              <button
+                onClick={() => (window.location.href = "/player")}
+                className="mt-8 inline-flex items-center gap-2 rounded-lg bg-gradient-primary text-primary-foreground px-5 py-2.5 text-sm font-medium shadow-glow"
+              >
+                Iniciar agora →
+              </button>
+              {screenId && (
+                <p className="mt-4 text-[10px] text-muted-foreground font-mono">
+                  Screen ID: {screenId}
+                </p>
+              )}
             </>
           ) : (
             <>

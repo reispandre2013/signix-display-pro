@@ -217,6 +217,7 @@ export const checkPairingStatus = createServerFn({ method: "POST" })
         paired: Boolean(pairing.used_at && pairing.screen_id),
         expired: expired && !pairing.used_at,
         found: true,
+        screen_id: pairing.screen_id ?? null,
       };
     } catch (e) {
       console.error("[checkPairingStatus] exception:", e instanceof Error ? e.message : String(e));
