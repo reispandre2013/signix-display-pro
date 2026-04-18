@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Tv, Maximize2, Volume2, Wifi, Image as ImageIcon } from "lucide-react";
-import { useMedia, useCampaigns } from "@/lib/hooks/use-supabase-data";
 import { applyMediaFallback, getMediaUrlCandidates } from "@/lib/media-url";
+import { getScreenContent } from "@/lib/server/player.functions";
 
 export const Route = createFileRoute("/player")({
   head: () => ({ meta: [{ title: "Player — Signix" }] }),
@@ -10,13 +11,26 @@ export const Route = createFileRoute("/player")({
 });
 
 function PlayerPage() {
-  const { data: media = [] } = useMedia();
-  const { data: campaigns = [] } = useCampaigns();
-  const items = media.filter((m) => m.public_url).slice(0, 6);
-  const activeCampaign = campaigns.find((c) => c.status === "active") ?? campaigns[0];
-
+  const [screenId, setScreenId] = useState<string | null>(null);
   const [idx, setIdx] = useState(0);
   const [now, setNow] = useState(new Date());
+
+  // Pega screen_id salvo no localStorage durante o pareamento
+  useEffect(() => {
+    const id = localStorage.getItem("signix_screen_id");
+    setScreenId(id);
+  }, []);
+
+  // Busca mídias + campanhas via server function pública (sem auth)
+  const { data, isLoading } = useQuery({
+    queryKey: ["screen_content", screenId],
+    enabled: !!screenId,
+    refetchInterval: 30_000,
+    queryFn: () => getScreenContent({ data: { screen_id: screenId! } }),
+  });
+
+  const items = data?.media ?? [];
+  const activeCampaign = data?.campaign ?? null;
 
   useEffect(() => {
     if (items.length === 0) return;
@@ -30,7 +44,34 @@ function PlayerPage() {
   }, []);
 
   const current = items[idx];
-  const currentSources = current ? getMediaUrlCandidates(current.public_url, current.thumbnail_url) : [];
+  const currentSources = current
+    ? getMediaUrlCandidates(current.public_url, current.thumbnail_url)
+    : [];
+
+  if (!screenId) {
+    return (
+      <div className="min-h-screen w-screen bg-black text-white grid place-items-center">
+        <div className="text-center">
+          <Tv className="h-16 w-16 mx-auto text-white/30" />
+          <p className="mt-4 text-lg">Esta TV ainda não foi pareada</p>
+          <Link
+            to="/pareamento"
+            className="mt-6 inline-block text-primary hover:underline text-sm"
+          >
+            Iniciar pareamento →
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen w-screen bg-black text-white grid place-items-center">
+        <p className="text-sm text-white/60">Carregando conteúdo…</p>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -38,9 +79,12 @@ function PlayerPage() {
         <div className="text-center">
           <ImageIcon className="h-16 w-16 mx-auto text-white/30" />
           <p className="mt-4 text-lg">Nenhuma mídia disponível para reprodução</p>
-          <Link to="/app/midias" className="mt-6 inline-block text-primary hover:underline text-sm">
-            Adicionar mídias →
-          </Link>
+          <p className="mt-2 text-xs text-white/40">
+            Adicione mídias no painel para esta organização.
+          </p>
+          <p className="mt-6 text-[10px] text-white/30 font-mono">
+            screen_id: {screenId}
+          </p>
         </div>
       </div>
     );
