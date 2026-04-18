@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestHeader } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
@@ -18,6 +17,7 @@ interface ClaimInput {
   name: string;
   unit_id: string | null;
   orientation: Orientation;
+  access_token: string;
 }
 
 function normalizeCode(raw: string) {
@@ -34,18 +34,21 @@ function toScreenOrientation(orientation: Orientation) {
 
 function validate(input: unknown): ClaimInput {
   if (typeof input !== "object" || input === null) throw new Error("Payload inválido.");
-  const { code, name, unit_id, orientation } = input as Record<string, unknown>;
+  const { code, name, unit_id, orientation, access_token } = input as Record<string, unknown>;
   if (typeof code !== "string" || normalizeCode(code).length < 6)
     throw new Error("Código de pareamento inválido.");
   if (typeof name !== "string" || name.trim().length < 2)
     throw new Error("Informe um nome para a tela.");
   if (orientation !== "landscape" && orientation !== "portrait")
     throw new Error("Orientação inválida.");
+  if (typeof access_token !== "string" || access_token.length < 10)
+    throw new Error("Sessão inválida. Faça login novamente.");
   return {
     code: normalizeCode(code),
     name: name.trim(),
     unit_id: typeof unit_id === "string" && unit_id.length > 0 ? unit_id : null,
     orientation,
+    access_token,
   };
 }
 
@@ -68,16 +71,16 @@ export const claimPairingCode = createServerFn({ method: "POST" })
       throw new Error("Configuração do servidor incompleta para realizar o pareamento.");
     }
 
-    const authHeader = getRequestHeader("authorization") ?? "";
-    const token = authHeader.replace(/^Bearer\s+/i, "");
-    if (!token) throw new Error("Não autenticado.");
-
+    const token = data.access_token;
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: `Bearer ${token}` } },
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData.user) throw new Error("Sessão inválida.");
+    const { data: userData, error: userErr } = await userClient.auth.getUser(token);
+    if (userErr || !userData.user) {
+      console.error("[claimPairingCode] getUser falhou:", userErr?.message);
+      throw new Error("Sessão inválida. Faça logout e entre novamente.");
+    }
     const callerAuthId = userData.user.id;
 
     const { data: profile, error: profileErr } = await supabaseAdmin
