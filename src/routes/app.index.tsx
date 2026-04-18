@@ -26,6 +26,38 @@ function Dashboard() {
   const alertsQ = useAlerts();
   const mediaQ = useMedia();
   const playlistsQ = usePlaylists();
+  const qc = useQueryClient();
+  const { profile } = useAuth();
+  const orgId = profile?.organization_id ?? null;
+
+  const isSyncing =
+    screensQ.isFetching ||
+    campaignsQ.isFetching ||
+    alertsQ.isFetching ||
+    mediaQ.isFetching ||
+    playlistsQ.isFetching;
+
+  const handleSyncAll = async () => {
+    try {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["screens", orgId] }),
+        qc.invalidateQueries({ queryKey: ["campaigns", orgId] }),
+        qc.invalidateQueries({ queryKey: ["alerts", orgId] }),
+        qc.invalidateQueries({ queryKey: ["media", orgId] }),
+        qc.invalidateQueries({ queryKey: ["playlists", orgId] }),
+      ]);
+      await Promise.all([
+        screensQ.refetch(),
+        campaignsQ.refetch(),
+        alertsQ.refetch(),
+        mediaQ.refetch(),
+        playlistsQ.refetch(),
+      ]);
+      toast.success("Dados sincronizados.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao sincronizar.");
+    }
+  };
 
   const screens = screensQ.data ?? [];
   const campaigns = campaignsQ.data ?? [];
