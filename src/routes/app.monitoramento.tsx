@@ -36,9 +36,26 @@ function MonitorPage() {
   const qc = useQueryClient();
   const { profile } = useAuth();
   const orgId = profile?.organization_id ?? null;
+  const reconcileFn = useServerFn(reconcileScreenStatuses);
+
+  // Auto-refresh + reconcile (marca offline telas sem ping > 2min)
+  useEffect(() => {
+    const tick = async () => {
+      try {
+        await reconcileFn({ data: {} });
+      } catch (e) {
+        console.warn("[reconcile] falhou:", e);
+      }
+      qc.invalidateQueries({ queryKey: ["screens", orgId] });
+    };
+    tick();
+    const t = setInterval(tick, 20_000);
+    return () => clearInterval(t);
+  }, [orgId, qc, reconcileFn]);
 
   const handleSync = async () => {
     try {
+      await reconcileFn({ data: {} }).catch(() => null);
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["screens", orgId] }),
         qc.invalidateQueries({ queryKey: ["units", orgId] }),
