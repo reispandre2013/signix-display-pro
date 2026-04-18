@@ -35,8 +35,11 @@ function PairingPage() {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(STORAGE_EXP_KEY);
       setCode(null);
+      const msg = e instanceof Error ? e.message : String(e);
       setCodeError(
-        "Não foi possível registrar o código de pareamento. Verifique a conexão e tente novamente.",
+        msg && msg !== "HTTPError"
+          ? msg
+          : "Não foi possível registrar o código de pareamento. Verifique a conexão e tente novamente.",
       );
     } finally {
       setLoading(false);

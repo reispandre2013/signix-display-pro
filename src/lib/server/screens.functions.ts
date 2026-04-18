@@ -145,17 +145,39 @@ export const claimPairingCode = createServerFn({ method: "POST" })
  */
 export const createPairingCode = createServerFn({ method: "POST" })
   .handler(async () => {
+    const hasUrl = Boolean(process.env.SUPABASE_URL ?? import.meta.env.VITE_SUPABASE_URL);
+    const hasKey = Boolean(
+      process.env.SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY,
+    );
+    console.log("[createPairingCode] env check:", { hasUrl, hasKey });
+
+    if (!hasUrl || !hasKey) {
+      throw new Error(
+        `Configuração do servidor ausente (url=${hasUrl}, serviceKey=${hasKey}). Verifique SERVICE_ROLE_KEY.`,
+      );
+    }
+
     const chunk = () => Math.random().toString(36).slice(2, 6).toUpperCase();
     const code = `${chunk()}-${chunk()}`;
     const expires_at = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-    const { error } = await supabaseAdmin
-      .from("pairing_codes")
-      .insert({ code, expires_at });
-    if (error) {
-      console.error("[createPairingCode] insert error:", error.message);
-      throw new Error("Não foi possível registrar o código de pareamento.");
+
+    try {
+      const { data: inserted, error } = await supabaseAdmin
+        .from("pairing_codes")
+        .insert({ code, expires_at })
+        .select("id, code, expires_at")
+        .single();
+      if (error) {
+        console.error("[createPairingCode] insert error:", JSON.stringify(error));
+        throw new Error(`Falha ao registrar código: ${error.message}`);
+      }
+      console.log("[createPairingCode] inserted:", inserted?.code);
+      return { code: inserted?.code ?? code, expires_at: inserted?.expires_at ?? expires_at };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[createPairingCode] exception:", msg);
+      throw new Error(msg || "Não foi possível registrar o código de pareamento.");
     }
-    return { code, expires_at };
   });
 
 /**
