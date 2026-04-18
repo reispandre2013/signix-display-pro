@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Tv, Maximize2, Volume2, Wifi, Image as ImageIcon } from "lucide-react";
 import { applyMediaFallback, getMediaUrlCandidates } from "@/lib/media-url";
-import { getScreenContent } from "@/lib/server/player.functions";
+import { getScreenContent, heartbeatScreen } from "@/lib/server/player.functions";
+import { useServerFn } from "@tanstack/react-start";
 
 export const Route = createFileRoute("/player")({
   head: () => ({ meta: [{ title: "Player — Signix" }] }),
@@ -42,6 +43,35 @@ function PlayerPage() {
     const c = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(c);
   }, []);
+
+  // Heartbeat: avisa o painel que esta TV está online (a cada 30s + ping inicial)
+  const heartbeatFn = useServerFn(heartbeatScreen);
+  useEffect(() => {
+    if (!screenId) return;
+    const sendPing = () => {
+      const resolution =
+        typeof window !== "undefined"
+          ? `${window.screen?.width ?? window.innerWidth}x${window.screen?.height ?? window.innerHeight}`
+          : null;
+      const platform =
+        typeof navigator !== "undefined"
+          ? navigator.userAgent.slice(0, 64)
+          : null;
+      heartbeatFn({
+        data: {
+          screen_id: screenId,
+          platform,
+          player_version: "web-1.0.0",
+          resolution,
+          current_campaign_id: data?.campaign?.id ?? null,
+        },
+      }).catch((e) => console.warn("[heartbeat] falhou:", e));
+    };
+    sendPing();
+    const t = setInterval(sendPing, 30_000);
+    return () => clearInterval(t);
+  }, [screenId, data?.campaign?.id, heartbeatFn]);
+
 
   const current = items[idx];
   const currentSources = current

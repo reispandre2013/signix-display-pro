@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui-kit/PageHeader";
 import { Panel } from "@/components/ui-kit/Panel";
@@ -8,6 +9,7 @@ import { StatusBadge } from "@/components/ui-kit/StatusBadge";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui-kit/States";
 import { useScreens, useUnits, useCampaigns } from "@/lib/hooks/use-supabase-data";
 import { useAuth } from "@/lib/auth-context";
+import { reconcileScreenStatuses } from "@/lib/server/player.functions";
 import {
   RefreshCw,
   MonitorSmartphone,
@@ -34,9 +36,26 @@ function MonitorPage() {
   const qc = useQueryClient();
   const { profile } = useAuth();
   const orgId = profile?.organization_id ?? null;
+  const reconcileFn = useServerFn(reconcileScreenStatuses);
+
+  // Auto-refresh + reconcile (marca offline telas sem ping > 2min)
+  useEffect(() => {
+    const tick = async () => {
+      try {
+        await reconcileFn();
+      } catch (e) {
+        console.warn("[reconcile] falhou:", e);
+      }
+      qc.invalidateQueries({ queryKey: ["screens", orgId] });
+    };
+    tick();
+    const t = setInterval(tick, 20_000);
+    return () => clearInterval(t);
+  }, [orgId, qc, reconcileFn]);
 
   const handleSync = async () => {
     try {
+      await reconcileFn().catch(() => null);
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["screens", orgId] }),
         qc.invalidateQueries({ queryKey: ["units", orgId] }),
