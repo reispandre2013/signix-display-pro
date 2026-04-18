@@ -15,10 +15,12 @@ function PairingPage() {
   const [code, setCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [paired, setPaired] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
 
   // Gera ou recupera código de pareamento (anônimo, sem org)
   const generateCode = async () => {
     setLoading(true);
+    setCodeError(null);
     const newCode = `${randomChunk()}-${randomChunk()}`;
     const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
     const { error } = await supabase
@@ -28,9 +30,9 @@ function PairingPage() {
       localStorage.setItem(STORAGE_KEY, newCode);
       setCode(newCode);
     } else {
-      // Mesmo se RLS bloquear, mostra o código localmente
-      localStorage.setItem(STORAGE_KEY, newCode);
-      setCode(newCode);
+      localStorage.removeItem(STORAGE_KEY);
+      setCode(null);
+      setCodeError("Não foi possível registrar o código de pareamento. Gere um novo código e tente novamente.");
     }
     setLoading(false);
   };
@@ -107,9 +109,11 @@ function PairingPage() {
               </p>
 
               <div className="mt-10 inline-flex items-center gap-3 rounded-2xl border border-border bg-card px-8 py-6 shadow-glow min-h-[120px]">
-                {loading || !code ? (
+                {loading ? (
                   <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                ) : (
+                ) : codeError ? (
+                  <p className="max-w-sm text-sm text-destructive">{codeError}</p>
+                ) : code ? (
                   code.split("").map((c, i) =>
                     c === "-" ? (
                       <span key={i} className="font-display text-4xl text-muted-foreground">·</span>
@@ -119,7 +123,7 @@ function PairingPage() {
                       </span>
                     )
                   )
-                )}
+                ) : null}
               </div>
 
               <div className="mt-8 grid sm:grid-cols-3 gap-3 max-w-md mx-auto text-left">

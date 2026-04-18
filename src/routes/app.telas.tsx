@@ -21,8 +21,10 @@ import { ptBR } from "date-fns/locale";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { claimPairingCode } from "@/lib/server/screens.functions";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/app/telas")({
   head: () => ({ meta: [{ title: "Telas e Players — Signix" }] }),
@@ -235,6 +237,7 @@ function PairScreenModal({
   units: Array<{ id: string; name: string }>;
 }) {
   const qc = useQueryClient();
+  const claimPairingCodeFn = useServerFn(claimPairingCode);
   const { profile } = useAuth();
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -246,14 +249,20 @@ function PairScreenModal({
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await claimPairingCode({
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Sessão expirada. Entre novamente.");
+
+      const res = await claimPairingCodeFn({
         data: {
-          code,
+          code: code.trim(),
           name,
           unit_id: unitId || null,
           orientation,
         },
+        headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res?.ok || !res.screen_id) throw new Error("Falha ao concluir o pareamento.");
       const screenName = res?.screen_name ?? name;
       toast.success(`Tela "${screenName}" pareada com sucesso!`);
       qc.invalidateQueries({ queryKey: ["screens", profile?.organization_id] });

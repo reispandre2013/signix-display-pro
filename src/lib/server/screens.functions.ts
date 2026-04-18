@@ -3,11 +3,12 @@ import { getRequestHeader } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "";
+const SUPABASE_URL = process.env.SUPABASE_URL ?? import.meta.env.VITE_SUPABASE_URL ?? "";
 const ANON_KEY =
   process.env.SUPABASE_ANON_KEY ??
   process.env.SUPABASE_PUBLISHABLE_KEY ??
-  process.env.VITE_SUPABASE_ANON_KEY ??
+  import.meta.env.VITE_SUPABASE_ANON_KEY ??
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
   "";
 
 type Orientation = "landscape" | "portrait";
@@ -21,6 +22,10 @@ interface ClaimInput {
 
 function normalizeCode(raw: string) {
   return raw.trim().toUpperCase().replace(/\s+/g, "");
+}
+
+function toScreenOrientation(orientation: Orientation) {
+  return orientation === "landscape" ? "horizontal" : "vertical";
 }
 
 function validate(input: unknown): ClaimInput {
@@ -54,6 +59,11 @@ function validate(input: unknown): ClaimInput {
 export const claimPairingCode = createServerFn({ method: "POST" })
   .inputValidator(validate)
   .handler(async ({ data }) => {
+    if (!SUPABASE_URL || !ANON_KEY) {
+      console.error("[claimPairingCode] Supabase URL ou anon key ausentes no runtime.");
+      throw new Error("Configuração do servidor incompleta para realizar o pareamento.");
+    }
+
     const authHeader = getRequestHeader("authorization") ?? "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
     if (!token) throw new Error("Não autenticado.");
@@ -101,7 +111,7 @@ export const claimPairingCode = createServerFn({ method: "POST" })
         organization_id: orgId,
         unit_id: data.unit_id,
         name: data.name,
-        orientation: data.orientation,
+        orientation: toScreenOrientation(data.orientation),
         pairing_code: data.code,
         device_status: "offline",
         is_online: false,
