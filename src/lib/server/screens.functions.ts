@@ -21,7 +21,11 @@ interface ClaimInput {
 }
 
 function normalizeCode(raw: string) {
-  return raw.trim().toUpperCase().replace(/\s+/g, "");
+  // Remove tudo que não é A-Z ou 0-9 (espaços, bullets ·, hífens, etc.)
+  // e re-insere hífen no formato canônico XXXX-XXXX se tiver 8 chars.
+  const clean = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (clean.length === 8) return `${clean.slice(0, 4)}-${clean.slice(4)}`;
+  return clean;
 }
 
 function toScreenOrientation(orientation: Orientation) {
