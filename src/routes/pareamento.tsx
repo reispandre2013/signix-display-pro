@@ -113,7 +113,7 @@ function PairingPage() {
                   <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 ) : codeError ? (
                   <p className="max-w-sm text-sm text-destructive">{codeError}</p>
-                ) : (
+                ) : code ? (
                   code.split("").map((c, i) =>
                     c === "-" ? (
                       <span key={i} className="font-display text-4xl text-muted-foreground">·</span>
@@ -123,7 +123,7 @@ function PairingPage() {
                       </span>
                     )
                   )
-                )}
+                ) : null}
               </div>
 
               <div className="mt-8 grid sm:grid-cols-3 gap-3 max-w-md mx-auto text-left">
