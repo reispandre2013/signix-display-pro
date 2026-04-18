@@ -44,6 +44,35 @@ function PlayerPage() {
     return () => clearInterval(c);
   }, []);
 
+  // Heartbeat: avisa o painel que esta TV está online (a cada 30s + ping inicial)
+  const heartbeatFn = useServerFn(heartbeatScreen);
+  useEffect(() => {
+    if (!screenId) return;
+    const sendPing = () => {
+      const resolution =
+        typeof window !== "undefined"
+          ? `${window.screen?.width ?? window.innerWidth}x${window.screen?.height ?? window.innerHeight}`
+          : null;
+      const platform =
+        typeof navigator !== "undefined"
+          ? navigator.userAgent.slice(0, 64)
+          : null;
+      heartbeatFn({
+        data: {
+          screen_id: screenId,
+          platform,
+          player_version: "web-1.0.0",
+          resolution,
+          current_campaign_id: data?.campaign?.id ?? null,
+        },
+      }).catch((e) => console.warn("[heartbeat] falhou:", e));
+    };
+    sendPing();
+    const t = setInterval(sendPing, 30_000);
+    return () => clearInterval(t);
+  }, [screenId, data?.campaign?.id, heartbeatFn]);
+
+
   const current = items[idx];
   const currentSources = current
     ? getMediaUrlCandidates(current.public_url, current.thumbnail_url)
