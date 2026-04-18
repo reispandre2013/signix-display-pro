@@ -1,0 +1,248 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #050508;
+  color: #f4f4f8;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.fatal {
+  padding: 2rem;
+  font-size: 1.25rem;
+  color: #ffb4b4;
+  max-width: 40rem;
+}
+
+#stage-activation,
+#stage-player {
+  position: fixed;
+  inset: 0;
+}
+
+.activation-wrap {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 3rem 2rem;
+  background: radial-gradient(ellipse at 50% 20%, #1a1a2e 0%, #050508 55%);
+}
+
+.activation-card {
+  width: min(720px, 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+}
+
+.activation-card h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.activation-card .sub {
+  margin: 0 0 1.75rem;
+  font-size: 0.95rem;
+  opacity: 0.72;
+}
+
+.label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.55;
+  margin-bottom: 0.5rem;
+}
+
+#pairing-code {
+  width: 100%;
+  font-size: 1.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  outline: none;
+}
+
+#pairing-code:focus {
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.85rem 1.25rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+button.primary {
+  background: #fff;
+  color: #0a0a0f;
+  border-color: #fff;
+  font-weight: 600;
+  flex: 1;
+  min-width: 160px;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+#activation-error {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: rgba(220, 60, 60, 0.15);
+  border: 1px solid rgba(220, 60, 60, 0.35);
+  color: #ffc9c9;
+  font-size: 0.9rem;
+}
+
+#activation-status {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  opacity: 0.65;
+}
+
+.hint {
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  opacity: 0.5;
+}
+
+.top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.25rem;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.72), transparent);
+  pointer-events: none;
+}
+
+.top-bar button {
+  pointer-events: auto;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.badge.is-offline {
+  border-color: rgba(255, 180, 80, 0.45);
+  color: #ffc896;
+}
+
+.media-layer {
+  position: absolute;
+  inset: 0;
+  background: #000;
+}
+
+#media-video,
+#media-image,
+#media-html {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+  border: 0;
+}
+
+#offline-banner {
+  position: absolute;
+  bottom: 3.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: rgba(180, 120, 40, 0.35);
+  border: 1px solid rgba(255, 200, 120, 0.4);
+  font-size: 0.8rem;
+}
+
+#fallback-message {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: rgba(0, 0, 0, 0.82);
+  text-align: center;
+}
+
+#fallback-message p {
+  max-width: 36rem;
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+#debug-panel {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  width: min(420px, 92vw);
+  max-height: 38vh;
+  overflow: auto;
+  z-index: 20;
+  background: rgba(10, 10, 18, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 0.6rem;
+  font-size: 10px;
+}
+
+#debug-pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: #a8f5c0;
+}

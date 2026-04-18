@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="description" content="Signix Player — Samsung Tizen" />
+  <title>Signix Player — Tizen</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!--
+    Configure o projeto Supabase do Signix (mesmos valores do front web / VITE_SUPABASE_*).
+    Sem estas variáveis o player não consegue chamar as Edge Functions existentes.
+  -->
+  <script>
+    window.SIGNIX_CONFIG = {
+      supabaseUrl: "https://SEU_PROJETO.supabase.co",
+      supabaseAnonKey: "COLE_AQUI_A_CHAVE_ANON_PUBLICAVEL",
+      debugMode: false,
+    };
+  </script>
+</head>
+
+<body>
+  <div id="stage-activation">
+    <div class="activation-wrap">
+      <div class="activation-card">
+        <h1>Ativação da tela</h1>
+        <p class="sub">Introduza o código gerado no painel (Dispositivos › Gerar código na tela).</p>
+        <label class="label" for="pairing-code">Código de pareamento</label>
+        <input id="pairing-code" type="text" inputmode="text" autocomplete="off" autocorrect="off"
+          spellcheck="false" placeholder="ABCD-EFGH" />
+        <div class="row-actions">
+          <button type="button" id="btn-activate" class="primary">Ativar</button>
+        </div>
+        <p id="activation-error" hidden></p>
+        <p id="activation-status"></p>
+        <p class="hint">
+          O código expira após o tempo definido no painel. Após ativar, a playlist é obtida automaticamente
+          (Edge Function <code>resolve-screen-playlist</code>). Setas ◀ ▶ mudam o item; Enter força sincronização.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div id="stage-player" hidden>
+    <div class="top-bar">
+      <div class="badge" id="brand-badge">Signix · Tizen</div>
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        <span class="badge" id="net-badge">Online</span>
+        <span class="badge" id="bar-counter">—</span>
+        <button type="button" id="btn-sync">Sincronizar</button>
+        <button type="button" id="btn-reset">Repor</button>
+      </div>
+    </div>
+    <div class="media-layer">
+      <video id="media-video" playsinline muted></video>
+      <img id="media-image" alt="" referrerpolicy="no-referrer" />
+      <iframe id="media-html" title="Conteúdo HTML"></iframe>
+    </div>
+    <div id="offline-banner" hidden>A reproduzir a partir de cache local (offline)</div>
+    <div id="fallback-message" hidden>
+      <p id="fallback-text">Sem conteúdo ou sem ligação.</p>
+    </div>
+    <div id="debug-panel" hidden>
+      <pre id="debug-pre"></pre>
+    </div>
+  </div>
+
+  <script src="js/constants.js"></script>
+  <script src="js/logger.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/adapter.js"></script>
+  <script src="js/cache.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/remote-control.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/main.js"></script>
+</body>
+
+</html>
