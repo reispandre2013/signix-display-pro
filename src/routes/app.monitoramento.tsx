@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui-kit/PageHeader";
 import { Panel } from "@/components/ui-kit/Panel";
@@ -8,6 +9,7 @@ import { StatusBadge } from "@/components/ui-kit/StatusBadge";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui-kit/States";
 import { useScreens, useUnits, useCampaigns } from "@/lib/hooks/use-supabase-data";
 import { useAuth } from "@/lib/auth-context";
+import { reconcileScreenStatuses } from "@/lib/server/player.functions";
 import {
   RefreshCw,
   MonitorSmartphone,
