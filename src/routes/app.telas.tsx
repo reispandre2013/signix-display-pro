@@ -4,11 +4,25 @@ import { Panel } from "@/components/ui-kit/Panel";
 import { StatusBadge } from "@/components/ui-kit/StatusBadge";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui-kit/States";
 import { useScreens, useUnits, useDeleteScreen } from "@/lib/hooks/use-supabase-data";
-import { Plus, Search, MonitorSmartphone, MapPin, Cpu, Trash2, MonitorOff } from "lucide-react";
+import {
+  Plus,
+  Search,
+  MonitorSmartphone,
+  MapPin,
+  Cpu,
+  Trash2,
+  MonitorOff,
+  Loader2,
+  Tv,
+  X,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { claimPairingCode } from "@/lib/server/screens.functions";
+import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/app/telas")({
   head: () => ({ meta: [{ title: "Telas e Players — Signix" }] }),
@@ -20,13 +34,20 @@ function ScreensPage() {
   const unitsQ = useUnits();
   const del = useDeleteScreen();
   const [q, setQ] = useState("");
+  const [pairOpen, setPairOpen] = useState(false);
 
   const screens = screensQ.data ?? [];
   const units = unitsQ.data ?? [];
   const unitName = (id: string | null) => units.find((u) => u.id === id)?.name ?? "—";
 
   const filtered = useMemo(
-    () => screens.filter((s) => !q || s.name.toLowerCase().includes(q.toLowerCase()) || s.pairing_code?.toLowerCase().includes(q.toLowerCase())),
+    () =>
+      screens.filter(
+        (s) =>
+          !q ||
+          s.name.toLowerCase().includes(q.toLowerCase()) ||
+          s.pairing_code?.toLowerCase().includes(q.toLowerCase()),
+      ),
     [screens, q],
   );
 
@@ -46,9 +67,12 @@ function ScreensPage() {
         title="Telas / Players"
         subtitle="Gerencie todos os dispositivos físicos conectados ao Signix."
         actions={
-          <Link to="/pareamento" className="inline-flex items-center gap-1.5 rounded-md bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-glow">
+          <button
+            onClick={() => setPairOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-md bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-glow"
+          >
             <Plus className="h-3.5 w-3.5" /> Adicionar tela
-          </Link>
+          </button>
         }
       />
 
@@ -72,7 +96,12 @@ function ScreensPage() {
         actions={
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome, código…" className="rounded-md border border-input bg-surface pl-7 pr-3 py-1.5 text-xs w-56 focus:outline-none focus:ring-2 focus:ring-ring" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Buscar por nome, código…"
+              className="rounded-md border border-input bg-surface pl-7 pr-3 py-1.5 text-xs w-56 focus:outline-none focus:ring-2 focus:ring-ring"
+            />
           </div>
         }
         bodyClassName="p-0"
@@ -80,16 +109,30 @@ function ScreensPage() {
         {screensQ.isLoading ? (
           <LoadingState />
         ) : screensQ.error ? (
-          <div className="p-4"><ErrorState error={screensQ.error} /></div>
+          <div className="p-4">
+            <ErrorState error={screensQ.error} />
+          </div>
         ) : filtered.length === 0 ? (
           <EmptyState
             title="Nenhuma tela cadastrada"
-            description="Pareie um novo player para começar a exibir conteúdo."
+            description="Abra a tela /pareamento na TV/player e use o código exibido para vincular o dispositivo."
             icon={MonitorOff}
             action={
-              <Link to="/pareamento" className="inline-flex items-center gap-1.5 rounded-md bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-glow">
-                <Plus className="h-3.5 w-3.5" /> Parear novo player
-              </Link>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button
+                  onClick={() => setPairOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-glow"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Parear novo player
+                </button>
+                <Link
+                  to="/pareamento"
+                  target="_blank"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-1.5 text-xs hover:bg-accent transition-smooth"
+                >
+                  <Tv className="h-3.5 w-3.5" /> Abrir modo player
+                </Link>
+              </div>
             }
           />
         ) : (
@@ -97,7 +140,13 @@ function ScreensPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-surface/50 text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <Th>Tela</Th><Th>Unidade</Th><Th>Status</Th><Th>Plataforma</Th><Th>Resolução</Th><Th>Último ping</Th><th className="px-4 py-2.5 w-10" />
+                  <Th>Tela</Th>
+                  <Th>Unidade</Th>
+                  <Th>Status</Th>
+                  <Th>Plataforma</Th>
+                  <Th>Resolução</Th>
+                  <Th>Último ping</Th>
+                  <th className="px-4 py-2.5 w-10" />
                 </tr>
               </thead>
               <tbody>
@@ -105,23 +154,63 @@ function ScreensPage() {
                   <tr key={s.id} className="border-b border-border/50 hover:bg-surface/40">
                     <Td>
                       <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-md bg-primary/10 grid place-items-center"><MonitorSmartphone className="h-4 w-4 text-primary" /></div>
+                        <div className="h-8 w-8 rounded-md bg-primary/10 grid place-items-center">
+                          <MonitorSmartphone className="h-4 w-4 text-primary" />
+                        </div>
                         <div>
                           <p className="font-medium">{s.name}</p>
-                          <p className="text-[11px] text-muted-foreground font-mono">{s.pairing_code ?? "—"}</p>
+                          <p className="text-[11px] text-muted-foreground font-mono">
+                            {s.pairing_code ?? "—"}
+                          </p>
                         </div>
                       </div>
                     </Td>
-                    <Td><span className="inline-flex items-center gap-1 text-xs"><MapPin className="h-3 w-3 text-muted-foreground" />{unitName(s.unit_id)}</span></Td>
-                    <Td><StatusBadge tone={s.is_online ? "success" : s.device_status === "warning" ? "warning" : "destructive"} label={s.device_status} /></Td>
                     <Td>
-                      <span className="inline-flex items-center gap-1 text-xs"><Cpu className="h-3 w-3 text-muted-foreground" />{s.platform ?? "—"}</span>
-                      <p className="text-[10px] text-muted-foreground font-mono">{s.player_version ?? ""}</p>
+                      <span className="inline-flex items-center gap-1 text-xs">
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        {unitName(s.unit_id)}
+                      </span>
                     </Td>
-                    <Td><span className="text-xs font-mono">{s.resolution ?? "—"}</span><p className="text-[10px] text-muted-foreground">{s.orientation}</p></Td>
-                    <Td><span className="text-xs text-muted-foreground">{s.last_seen_at ? formatDistanceToNow(new Date(s.last_seen_at), { locale: ptBR, addSuffix: true }) : "nunca"}</span></Td>
+                    <Td>
+                      <StatusBadge
+                        tone={
+                          s.is_online
+                            ? "success"
+                            : s.device_status === "warning"
+                              ? "warning"
+                              : "destructive"
+                        }
+                        label={s.device_status}
+                      />
+                    </Td>
+                    <Td>
+                      <span className="inline-flex items-center gap-1 text-xs">
+                        <Cpu className="h-3 w-3 text-muted-foreground" />
+                        {s.platform ?? "—"}
+                      </span>
+                      <p className="text-[10px] text-muted-foreground font-mono">
+                        {s.player_version ?? ""}
+                      </p>
+                    </Td>
+                    <Td>
+                      <span className="text-xs font-mono">{s.resolution ?? "—"}</span>
+                      <p className="text-[10px] text-muted-foreground">{s.orientation}</p>
+                    </Td>
+                    <Td>
+                      <span className="text-xs text-muted-foreground">
+                        {s.last_seen_at
+                          ? formatDistanceToNow(new Date(s.last_seen_at), {
+                              locale: ptBR,
+                              addSuffix: true,
+                            })
+                          : "nunca"}
+                      </span>
+                    </Td>
                     <td className="px-4 py-3">
-                      <button onClick={() => handleDelete(s.id, s.name)} className="h-7 w-7 grid place-items-center rounded-md hover:bg-destructive/10 text-destructive">
+                      <button
+                        onClick={() => handleDelete(s.id, s.name)}
+                        className="h-7 w-7 grid place-items-center rounded-md hover:bg-destructive/10 text-destructive"
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </td>
@@ -132,6 +221,169 @@ function ScreensPage() {
           </div>
         )}
       </Panel>
+
+      {pairOpen && <PairScreenModal onClose={() => setPairOpen(false)} units={units} />}
+    </div>
+  );
+}
+
+function PairScreenModal({
+  onClose,
+  units,
+}: {
+  onClose: () => void;
+  units: Array<{ id: string; name: string }>;
+}) {
+  const qc = useQueryClient();
+  const { profile } = useAuth();
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+  const [unitId, setUnitId] = useState<string>("");
+  const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
+  const [submitting, setSubmitting] = useState(false);
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const res = await claimPairingCode({
+        data: {
+          code,
+          name,
+          unit_id: unitId || null,
+          orientation,
+        },
+      });
+      toast.success(`Tela "${res.screen_name}" pareada com sucesso!`);
+      qc.invalidateQueries({ queryKey: ["screens", profile?.organization_id] });
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao parear.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 grid place-items-center">
+              <Tv className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-display text-base font-bold">Parear nova tela</h2>
+              <p className="text-[11px] text-muted-foreground">
+                Informe o código exibido no player.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="h-7 w-7 grid place-items-center rounded-md hover:bg-accent"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <form onSubmit={onSubmit} className="p-5 space-y-4">
+          <div>
+            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+              Código de pareamento
+            </label>
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="ABCD-1234"
+              required
+              autoFocus
+              className="mt-1 w-full rounded-md border border-input bg-surface px-3 py-2.5 font-mono text-lg tracking-widest text-center uppercase focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Abra <code className="text-foreground">/pareamento</code> na TV para ver o código.
+            </p>
+          </div>
+
+          <div>
+            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+              Nome da tela
+            </label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ex.: Recepção / Vitrine principal"
+              required
+              minLength={2}
+              className="mt-1 w-full rounded-md border border-input bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                Unidade
+              </label>
+              <select
+                value={unitId}
+                onChange={(e) => setUnitId(e.target.value)}
+                className="mt-1 w-full rounded-md border border-input bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Sem unidade</option>
+                {units.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                Orientação
+              </label>
+              <select
+                value={orientation}
+                onChange={(e) => setOrientation(e.target.value as "landscape" | "portrait")}
+                className="mt-1 w-full rounded-md border border-input bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="landscape">Paisagem</option>
+                <option value="portrait">Retrato</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md border border-border bg-surface px-3 py-1.5 text-xs hover:bg-accent transition-smooth"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="inline-flex items-center gap-1.5 rounded-md bg-gradient-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow-glow disabled:opacity-60"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Pareando…
+                </>
+              ) : (
+                <>
+                  <Plus className="h-3.5 w-3.5" /> Parear tela
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
