@@ -31,7 +31,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/app/telas")({
-  head: () => ({ meta: [{ title: "Telas e Players — Signix" }] }),
+  head: () => ({ meta: [{ title: "Dispositivos — Signix" }] }),
   component: ScreensPage,
 });
 
@@ -100,7 +100,7 @@ function ScreensPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Telas / Players"
+        title="Dispositivos"
         subtitle="Cadastre dispositivos (Android TV ou Samsung Tizen) com código de pareamento. A plataforma deve ser a mesma configurada no player."
         actions={
           <button

@@ -31,7 +31,7 @@ const sections: {
     items: [
       { to: "/app", label: "Dashboard", icon: LayoutDashboard },
       { to: "/app/monitoramento", label: "Monitoramento", icon: Activity },
-      { to: "/app/telas", label: "Telas / Players", icon: Monitor },
+      { to: "/app/telas", label: "Dispositivos", icon: Monitor },
       { to: "/app/grupos", label: "Grupos de telas", icon: Layers },
     ],
   },

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 const breadcrumbs: Record<string, string> = {
   "/app": "Dashboard",
   "/app/monitoramento": "Monitoramento em tempo real",
-  "/app/telas": "Telas / Players",
+  "/app/telas": "Dispositivos",
   "/app/grupos": "Grupos de telas",
   "/app/midias": "Biblioteca de mídias",
   "/app/playlists": "Playlists",

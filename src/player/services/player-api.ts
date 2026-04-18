@@ -29,7 +29,7 @@ export function normalizePairingCode(raw: string): string {
 function mapPairingRpcError(raw: string): string {
   const m = raw.toLowerCase();
   if (m.includes("invalid or expired pairing")) {
-    return "Código não encontrado ou expirado. Verifique se a TV mostra o mesmo código que em Telas › ícone da chave (pareamento) no painel; se necessário, gere um código novo.";
+    return "Código não encontrado ou expirado. Verifique se a TV mostra o mesmo código que em Dispositivos › pareamento no painel; se necessário, gere um código novo.";
   }
   return raw.length > 0 ? raw : "Falha no pareamento.";
 }

@@ -110,7 +110,7 @@ function MonitorPage() {
           <EmptyState
             icon={Tv}
             title="Nenhuma tela cadastrada"
-            description="Adicione players na seção Telas para monitorá-los aqui."
+            description="Adicione players na seção Dispositivos para monitorá-los aqui."
           />
         </Panel>
       ) : view === "grid" ? (
