@@ -156,7 +156,7 @@
 
       var credsNow = Storage.getCredentials();
       if (!credsNow) {
-        onStage("activation", getRuntimeStatus());
+        onStage("pairing", getRuntimeStatus());
         return Promise.resolve();
       }
 
@@ -262,7 +262,7 @@
     function syncPlaylist() {
       var creds = Storage.getCredentials();
       if (!creds) {
-        onStage("activation", getRuntimeStatus());
+        onStage("pairing", getRuntimeStatus());
         return Promise.resolve();
       }
 

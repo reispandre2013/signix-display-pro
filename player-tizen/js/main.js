@@ -10,22 +10,6 @@
     return document.getElementById(id);
   }
 
-  function buildFingerprint() {
-    var seed =
-      (typeof navigator !== "undefined" ? navigator.userAgent : "") +
-      "|" +
-      (typeof navigator !== "undefined" ? navigator.language : "") +
-      "|" +
-      (typeof screen !== "undefined" ? screen.width + "x" + screen.height : "") +
-      "|tizen-web";
-    var hash = 0;
-    for (var i = 0; i < seed.length; i += 1) {
-      hash = (hash << 5) - hash + seed.charCodeAt(i);
-      hash |= 0;
-    }
-    return "fp-" + Math.abs(hash);
-  }
-
   function readConfig() {
     var cfg = global.SIGNIX_CONFIG || {};
     if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
@@ -46,6 +30,18 @@
     var online = typeof navigator !== "undefined" ? navigator.onLine : true;
     el.textContent = online ? "Online" : "Offline";
     el.classList.toggle("is-offline", !online);
+  }
+
+  /** Instalações antigas só tinham screenId (resolve/heartbeat bastam). */
+  function hasPlaybackCredentials(creds) {
+    return !!(creds && creds.screenId);
+  }
+
+  function showStage(name) {
+    var pairing = $("stage-pairing");
+    var player = $("stage-player");
+    if (pairing) pairing.hidden = name !== "pairing";
+    if (player) player.hidden = name !== "player";
   }
 
   function boot() {
@@ -73,13 +69,13 @@
       return;
     }
 
-    var stageActivation = $("stage-activation");
+    var stagePairing = $("stage-pairing");
     var stagePlayer = $("stage-player");
-    var codeInput = $("pairing-code");
-    var btnActivate = $("btn-activate");
-    var btnReset = $("btn-reset");
-    var actError = $("activation-error");
-    var actStatus = $("activation-status");
+    var pairingCodeDisplay = $("pairing-code-display");
+    var pairingExpires = $("pairing-expires");
+    var pairingStatusEl = $("pairing-status");
+    var pairingError = $("pairing-error");
+    var btnNewPairingCode = $("btn-new-pairing-code");
     var videoEl = $("media-video");
     var imgEl = $("media-image");
     var iframeEl = $("media-html");
@@ -88,12 +84,58 @@
     var debugPanel = $("debug-panel");
     var debugPre = $("debug-pre");
     var syncBtn = $("btn-sync");
+    var btnReset = $("btn-reset");
 
     var debugVisible = false;
+    var pollTimer = null;
+    var currentPairingCode = null;
 
-    function showStage(name) {
-      if (stageActivation) stageActivation.hidden = name !== "activation";
-      if (stagePlayer) stagePlayer.hidden = name === "activation";
+    function clearPoll() {
+      if (pollTimer != null) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    }
+
+    function runPairingError(msg) {
+      if (!pairingError) return;
+      pairingError.textContent = msg || "";
+      pairingError.hidden = !msg;
+    }
+
+    function renderCodeVisual(rawCode) {
+      if (!pairingCodeDisplay || !rawCode) return;
+      pairingCodeDisplay.innerHTML = "";
+      var s = String(rawCode);
+      for (var i = 0; i < s.length; i += 1) {
+        var ch = s.charAt(i);
+        var span = document.createElement("span");
+        if (ch === "-") {
+          span.className = "pairing-sep";
+          span.textContent = "·";
+        } else {
+          span.className = "pairing-char";
+          span.textContent = ch;
+        }
+        pairingCodeDisplay.appendChild(span);
+      }
+    }
+
+    function updatePairingStatus(res) {
+      if (!pairingStatusEl) return;
+      if (!res) {
+        pairingStatusEl.textContent = "";
+        return;
+      }
+      if (res.status === "paired") {
+        pairingStatusEl.textContent = "Pareamento concluído. A iniciar…";
+        return;
+      }
+      if (res.status === "expired") {
+        pairingStatusEl.textContent = "Código expirado. Gere um novo.";
+        return;
+      }
+      pairingStatusEl.textContent = "À espera de confirmação no painel…";
     }
 
     function updateDebug() {
@@ -105,6 +147,7 @@
           creds: creds
             ? {
                 screenId: creds.screenId,
+                pairingCode: creds.pairingCode ? "***" : null,
                 screenName: creds.screenName,
                 pairedAt: creds.pairedAt,
               }
@@ -132,8 +175,8 @@
           barCounter.textContent =
             status.total > 0 ? status.index + 1 + " / " + status.total : "—";
         }
-        if (stage === "activation") {
-          showStage("activation");
+        if (stage === "pairing") {
+          showStage("pairing");
         } else {
           showStage("player");
         }
@@ -202,74 +245,101 @@
         });
     }
 
-    function runActivationError(msg) {
-      if (actError) {
-        actError.textContent = msg || "";
-        actError.hidden = !msg;
-      }
-    }
-
-    function runActivationBusy(on) {
-      if (btnActivate) btnActivate.disabled = !!on;
-      if (actStatus) actStatus.textContent = on ? "A ativar…" : "";
-    }
-
     function afterPairSuccess(creds) {
       Storage.setCredentials(creds);
-      runActivationError("");
+      runPairingError("");
       showStage("player");
       player.syncPlaylist().catch(function (e) {
         logger.error(e);
       });
     }
 
-    function onActivate() {
-      var raw = codeInput ? codeInput.value : "";
-      var code = Adapter.normalizePairingCode(raw);
-      runActivationError("");
-      if (code.length < 8) {
-        runActivationError("Introduza o código completo.");
-        return;
-      }
-      runActivationBusy(true);
-      var fp = buildFingerprint();
+    function pollOnce() {
+      if (!currentPairingCode) return;
       api
-        .pairScreen(code, fp)
+        .checkAnonymousPairingStatus(currentPairingCode)
         .then(function (res) {
-          var creds = Adapter.credentialsFromPairScreen(res);
-          creds.fingerprint = fp;
-          afterPairSuccess(creds);
+          updatePairingStatus(res);
+          if (res.status === "expired") {
+            clearPoll();
+            runPairingError("Este código expirou. Toque em «Gerar novo código».");
+            return;
+          }
+          if (res.paired && res.screen_id) {
+            clearPoll();
+            var normalized = Adapter.normalizePairingCode(currentPairingCode);
+            afterPairSuccess({
+              screenId: res.screen_id,
+              pairingCode: normalized,
+              screenName: res.screen_name || "",
+              deviceId: res.screen_id,
+              organizationId: "",
+              pairedAt: new Date().toISOString(),
+            });
+          }
         })
         .catch(function (e) {
-          runActivationError(e instanceof Error ? e.message : "Falha no pareamento.");
+          logger.warn("[pairing poll]", e);
+        });
+    }
+
+    function startPairingFlow() {
+      clearPoll();
+      currentPairingCode = null;
+      showStage("pairing");
+      runPairingError("");
+      updatePairingStatus(null);
+      if (pairingCodeDisplay) pairingCodeDisplay.innerHTML = "";
+      if (pairingExpires) pairingExpires.textContent = "";
+      if (pairingStatusEl) pairingStatusEl.textContent = "A pedir código ao servidor…";
+
+      api
+        .createAnonymousPairingCode("tizen")
+        .then(function (res) {
+          var raw = res && res.code ? String(res.code) : "";
+          if (!raw) throw new Error("Resposta inválida do servidor.");
+          currentPairingCode = Adapter.normalizePairingCode(raw);
+          renderCodeVisual(raw.trim().toUpperCase());
+          if (pairingExpires && res.expires_at) {
+            try {
+              var d = new Date(res.expires_at);
+              pairingExpires.textContent =
+                "Válido até " + d.toLocaleString() + " (renove se expirar).";
+            } catch (e) {
+              pairingExpires.textContent = "";
+            }
+          }
+          updatePairingStatus({ status: "pending" });
+          pollOnce();
+          pollTimer = setInterval(pollOnce, C.PAIRING_POLL_MS || 4000);
         })
-        .finally(function () {
-          runActivationBusy(false);
+        .catch(function (e) {
+          logger.error("[pairing create]", e);
+          runPairingError(e instanceof Error ? e.message : "Falha ao gerar código.");
+          if (pairingStatusEl) pairingStatusEl.textContent = "";
         });
     }
 
     function onReset() {
       if (!global.confirm("Repor pareamento neste dispositivo?")) return;
+      clearPoll();
       player.reset();
       Storage.clearCredentials();
       Storage.clearCachedPayload();
-      showStage("activation");
-      runActivationError("");
-      if (codeInput) codeInput.value = "";
+      startPairingFlow();
     }
 
-    if (btnActivate) btnActivate.addEventListener("click", onActivate);
+    if (btnNewPairingCode) {
+      btnNewPairingCode.addEventListener("click", function () {
+        startPairingFlow();
+      });
+    }
     if (btnReset) btnReset.addEventListener("click", onReset);
-    if (syncBtn)
+    if (syncBtn) {
       syncBtn.addEventListener("click", function () {
         player.syncPlaylist().catch(function (e) {
           logger.error(e);
         });
-      });
-
-    if (codeInput) {
-      codeInput.addEventListener("keydown", function (ev) {
-        if (ev.key === "Enter") onActivate();
       });
     }
 
@@ -304,6 +374,10 @@
         player.nextItem();
       },
       onEnter: function () {
+        if (stagePairing && !stagePairing.hidden) {
+          pollOnce();
+          return;
+        }
         if (!Storage.getCredentials()) return;
         player.syncPlaylist().catch(function () {});
       },
@@ -328,20 +402,13 @@
     });
 
     var creds0 = Storage.getCredentials();
-    if (creds0 && creds0.screenId) {
+    if (hasPlaybackCredentials(creds0)) {
       showStage("player");
       player.syncPlaylist().catch(function (e) {
         logger.error(e);
       });
     } else {
-      showStage("activation");
-      if (codeInput) {
-        try {
-          codeInput.focus();
-        } catch (e) {
-          /* ignore */
-        }
-      }
+      startPairingFlow();
     }
 
     flushLogQueue().catch(function () {});

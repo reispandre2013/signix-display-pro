@@ -147,7 +147,8 @@ function PairingPage() {
                 Use o código abaixo para parear<br />este dispositivo à sua conta
               </h1>
               <p className="mt-3 text-muted-foreground max-w-md mx-auto text-sm">
-                Acesse <span className="text-foreground font-medium">Dispositivos › Novo dispositivo</span> no painel Signix e informe o código exibido.
+                Acesse <span className="text-foreground font-medium">Dispositivos › Novo dispositivo</span> no painel Signix e informe o código exibido
+                (o mesmo fluxo do <span className="text-foreground font-medium">player Tizen nativo</span>).
               </p>
 
               <div className="mt-10 inline-flex items-center gap-3 rounded-2xl border border-border bg-card px-8 py-6 shadow-glow min-h-[120px]">

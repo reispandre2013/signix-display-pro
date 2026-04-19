@@ -383,7 +383,7 @@ function PairScreenModal({
             <div>
               <h2 className="font-display text-base font-bold">Novo dispositivo</h2>
               <p className="text-[11px] text-muted-foreground">
-                Cadastro com código de ativação exibido na TV.
+                Use o código que a <strong>TV mostra</strong> (player Tizen nativo ou página de pareamento).
               </p>
             </div>
           </div>
@@ -398,6 +398,24 @@ function PairScreenModal({
         <form onSubmit={onSubmit} className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-5">
           <div>
             <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+              Código exibido na TV <span className="text-destructive">*</span>
+            </label>
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="ABCD-1234"
+              required
+              autoFocus
+              className="mt-1 w-full rounded-md border border-input bg-surface px-3 py-2.5 font-mono text-lg tracking-widest text-center uppercase focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              O código é gerado na TV (app Tizen Signix ou página <code className="text-foreground">/pareamento</code>).
+              A plataforma em baixo deve coincidir com a da TV.
+            </p>
+          </div>
+
+          <div>
+            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
               Nome do dispositivo <span className="text-destructive">*</span>
             </label>
             <input
@@ -406,26 +424,8 @@ function PairScreenModal({
               placeholder="Ex.: Recepção / Vitrine principal"
               required
               minLength={2}
-              autoFocus
               className="mt-1 w-full rounded-md border border-input bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
-          </div>
-
-          <div>
-            <label className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-              Código de ativação <span className="text-destructive">*</span>
-            </label>
-            <input
-              value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="ABCD-1234"
-              required
-              className="mt-1 w-full rounded-md border border-input bg-surface px-3 py-2.5 font-mono text-lg tracking-widest text-center uppercase focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Abra <code className="text-foreground">/pareamento</code> na TV (com a mesma plataforma escolhida abaixo, ex.{" "}
-              <code className="text-foreground">?platform=tizen</code>).
-            </p>
           </div>
 
           <fieldset className="space-y-0">
@@ -460,6 +460,11 @@ function PairScreenModal({
               Obrigatório: deve coincidir com o tipo de player em pareamento.
             </p>
           </fieldset>
+
+          <p className="text-[11px] text-muted-foreground rounded-md border border-border/60 bg-muted/25 p-2.5 leading-relaxed">
+            A <strong>playlist</strong> não é escolhida aqui: associe uma <strong>campanha activa</strong> com alvo
+            nesta tela (ou na unidade) e uma playlist, em <strong>Campanhas</strong>.
+          </p>
 
           <div className="grid grid-cols-2 gap-3">
             <div>

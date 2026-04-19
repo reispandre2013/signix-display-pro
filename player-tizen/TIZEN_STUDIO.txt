@@ -23,3 +23,15 @@ Build e execucao
 - Run on TV / Emulator: ligue a TV em modo desenvolvedor e use o Device Manager / Run.
 
 Nota: o nome do projeto no Explorador e "SignixPlayerTizen" (definido em .project). Pode renomear no Studio; mantenha package/id alinhados ao certificado.
+
+Pareamento (TV mostra codigo)
+-----------------------------
+O player Tizen nativo chama as Edge Functions Supabase publicas (anon key):
+- create-pairing-code  (POST) — gera linha em public.pairing_codes
+- check-pairing-status (POST) — polling ate o painel concluir o claim
+
+Deploy no projeto Supabase (CLI ou Dashboard), por exemplo:
+  supabase functions deploy create-pairing-code
+  supabase functions deploy check-pairing-status
+
+No painel, o fluxo continua a ser Dispositivos > Novo dispositivo (claimPairingCode), igual ao da pagina /pareamento no browser.

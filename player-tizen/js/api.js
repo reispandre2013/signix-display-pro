@@ -34,6 +34,22 @@
       });
     }
 
+    /** Fluxo correcto: TV pede código ao backend (sem digitar no painel). */
+    function createAnonymousPairingCode(platform) {
+      return postFunction("create-pairing-code", {
+        platform: platform === "tizen" ? "tizen" : "android",
+      });
+    }
+
+    function checkAnonymousPairingStatus(code) {
+      var c = Adapter.normalizePairingCode(code);
+      if (c.length < 4) {
+        return Promise.reject(new Error("Código inválido."));
+      }
+      return postFunction("check-pairing-status", { code: c });
+    }
+
+    /** Fluxo legado (painel gera código na tela — prepare_screen_pairing). Mantido por compatibilidade. */
     function pairScreen(pairingCode, fingerprint) {
       var code = Adapter.normalizePairingCode(pairingCode);
       if (code.length < 8) {
@@ -90,6 +106,8 @@
     }
 
     return {
+      createAnonymousPairingCode: createAnonymousPairingCode,
+      checkAnonymousPairingStatus: checkAnonymousPairingStatus,
       pairScreen: pairScreen,
       resolveScreenPayload: resolveScreenPayload,
       sendHeartbeat: sendHeartbeat,

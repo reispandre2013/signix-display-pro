@@ -232,23 +232,34 @@ export const checkPairingStatus = createServerFn({ method: "POST" })
         .maybeSingle();
       if (error) {
         console.error("[checkPairingStatus] supabase error:", error.message);
-        return { paired: false, expired: false, found: false, screen_id: null };
+        return { paired: false, expired: false, found: false, status: "pending" as const, screen_id: null };
       }
-      if (!pairing) return { paired: false, expired: false, found: false, screen_id: null };
-      const expired = pairing.expires_at
+      if (!pairing) {
+        return {
+          paired: false,
+          expired: false,
+          found: false,
+          status: "pending" as const,
+          screen_id: null,
+        };
+      }
+      const expiredByTime = pairing.expires_at
         ? new Date(pairing.expires_at).getTime() < Date.now()
         : false;
       const paired = Boolean(pairing.used_at && pairing.screen_id);
+      const expired = expiredByTime && !pairing.used_at;
+      const status = paired ? ("paired" as const) : expired ? ("expired" as const) : ("pending" as const);
       return {
         paired,
-        expired: expired && !pairing.used_at,
+        expired,
         found: true,
+        status,
         /** Presente quando `paired` — permite ao player gravar credenciais para sync. */
         screen_id: paired ? (pairing.screen_id as string) : null,
       };
     } catch (e) {
       console.error("[checkPairingStatus] exception:", e instanceof Error ? e.message : String(e));
-      return { paired: false, expired: false, found: false, screen_id: null };
+      return { paired: false, expired: false, found: false, status: "pending" as const, screen_id: null };
     }
   });
 

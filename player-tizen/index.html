@@ -21,22 +21,25 @@
 </head>
 
 <body>
-  <div id="stage-activation">
+  <div id="stage-pairing">
     <div class="activation-wrap">
       <div class="activation-card">
-        <h1>Ativação da tela</h1>
-        <p class="sub">Introduza o código gerado no painel (Dispositivos › Gerar código na tela).</p>
-        <label class="label" for="pairing-code">Código de pareamento</label>
-        <input id="pairing-code" type="text" inputmode="text" autocomplete="off" autocorrect="off"
-          spellcheck="false" placeholder="ABCD-EFGH" />
+        <h1>Pareamento</h1>
+        <p class="sub">
+          No painel Signix: <strong>Dispositivos</strong> › <strong>Novo dispositivo</strong> — escolha
+          <strong>Samsung Tizen TV</strong> e indique o código abaixo (o mesmo que aparece aqui).
+        </p>
+        <p class="label">Código na TV</p>
+        <div id="pairing-code-display" class="pairing-code-row" aria-live="polite"></div>
+        <p id="pairing-expires" class="hint"></p>
+        <p id="pairing-status" class="pairing-status"></p>
+        <p id="pairing-error" class="pairing-error" hidden></p>
         <div class="row-actions">
-          <button type="button" id="btn-activate" class="primary">Ativar</button>
+          <button type="button" id="btn-new-pairing-code" class="primary">Gerar novo código</button>
         </div>
-        <p id="activation-error" hidden></p>
-        <p id="activation-status"></p>
         <p class="hint">
-          O código expira após o tempo definido no painel. Após ativar, a playlist é obtida automaticamente
-          (Edge Function <code>resolve-screen-playlist</code>). Setas ◀ ▶ mudam o item; Enter força sincronização.
+          O código expira em cerca de 10 minutos. Se necessário, gere outro aqui. Após o pareamento, a playlist
+          sincroniza automaticamente. Comando: Enter reforça a verificação; ◀ ▶ mudam o item em reprodução.
         </p>
       </div>
     </div>
