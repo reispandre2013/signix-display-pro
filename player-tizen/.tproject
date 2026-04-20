@@ -2,7 +2,7 @@
 <manifest xmlns="http://tizen.org/ns/metadata">
 	<tizenProjectFileVersion>2</tizenProjectFileVersion>
 	<projectName>SignixPlayerTizen</projectName>
-	<projectVersion>1.0.4</projectVersion>
+	<projectVersion>1.0.5</projectVersion>
 	<projectType>web</projectType>
 	<packageName>orgSIGNIXplayerTizen</packageName>
 </manifest>

@@ -118,7 +118,7 @@
         deviceFingerprint: fingerprint,
         platform: "tizen",
         osName: typeof navigator !== "undefined" ? navigator.userAgent : "tizen-tv",
-        playerVersion: C.PLAYER_VERSION_LABEL || "signix-tizen-player@1.0.4",
+        playerVersion: C.PLAYER_VERSION_LABEL || "signix-tizen-player@1.0.5",
       }).catch(function (e) {
         var raw = e instanceof Error ? e.message : "";
         throw new Error(Adapter.mapPairingRpcError ? Adapter.mapPairingRpcError(raw) : raw);
