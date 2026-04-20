@@ -10,6 +10,7 @@ import type {
   Organization,
   PairingCode,
   Playlist,
+  PlaylistItem,
   Profile,
   Screen,
   ScreenGroup,
@@ -124,11 +125,109 @@ export function usePlaylists() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("playlists")
-        .select("*")
+        .select("*, playlist_items(count)")
         .eq("organization_id", orgId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Playlist[];
+      return (data ?? []) as (Playlist & { playlist_items?: { count: number }[] })[];
+    },
+  });
+}
+
+export type PlaylistItemWithMedia = PlaylistItem & {
+  media_assets: Pick<
+    MediaAsset,
+    "id" | "name" | "file_type" | "public_url" | "thumbnail_url" | "mime_type" | "duration_seconds"
+  > | null;
+};
+
+export function usePlaylistItems(playlistId: string | null) {
+  const orgId = useOrgId();
+  return useQuery({
+    queryKey: ["playlist_items", orgId, playlistId],
+    enabled: !!orgId && !!playlistId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("playlist_items")
+        .select(
+          "id, playlist_id, media_asset_id, position, duration_override_seconds, transition_type, created_at, media_assets(id, name, file_type, public_url, thumbnail_url, mime_type, duration_seconds)",
+        )
+        .eq("playlist_id", playlistId!)
+        .order("position", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as PlaylistItemWithMedia[];
+    },
+  });
+}
+
+export function useAddPlaylistItem() {
+  const qc = useQueryClient();
+  const orgId = useOrgId();
+  return useMutation({
+    mutationFn: async ({ playlistId, mediaAssetId }: { playlistId: string; mediaAssetId: string }) => {
+      if (!orgId) throw new Error("Sem organização ativa.");
+      const { data: existing, error: selErr } = await supabase
+        .from("playlist_items")
+        .select("position")
+        .eq("playlist_id", playlistId)
+        .order("position", { ascending: false })
+        .limit(1);
+      if (selErr) throw selErr;
+      const maxPos = existing?.[0]?.position;
+      const nextPosition = typeof maxPos === "number" ? maxPos + 1 : 1;
+      const { error } = await supabase.from("playlist_items").insert({
+        playlist_id: playlistId,
+        media_asset_id: mediaAssetId,
+        position: nextPosition,
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["playlist_items", orgId, vars.playlistId] });
+      qc.invalidateQueries({ queryKey: ["playlists", orgId] });
+    },
+  });
+}
+
+export function useDeletePlaylistItem() {
+  const qc = useQueryClient();
+  const orgId = useOrgId();
+  return useMutation({
+    mutationFn: async ({ id, playlistId }: { id: string; playlistId: string }) => {
+      const { error } = await supabase.from("playlist_items").delete().eq("id", id);
+      if (error) throw error;
+      return { id, playlistId };
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["playlist_items", orgId, vars.playlistId] });
+      qc.invalidateQueries({ queryKey: ["playlists", orgId] });
+    },
+  });
+}
+
+export function useSwapPlaylistItemPositions() {
+  const qc = useQueryClient();
+  const orgId = useOrgId();
+  return useMutation({
+    mutationFn: async (vars: {
+      playlistId: string;
+      itemIdA: string;
+      itemIdB: string;
+      posA: number;
+      posB: number;
+    }) => {
+      const temp = 9_000_000 + Math.floor(Math.random() * 100_000);
+      const { itemIdA, itemIdB, posA, posB } = vars;
+      const tbl = supabase.from("playlist_items");
+      let { error } = await tbl.update({ position: temp }).eq("id", itemIdA);
+      if (error) throw error;
+      ({ error } = await tbl.update({ position: posA }).eq("id", itemIdB));
+      if (error) throw error;
+      ({ error } = await tbl.update({ position: posB }).eq("id", itemIdA));
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["playlist_items", orgId, vars.playlistId] });
     },
   });
 }

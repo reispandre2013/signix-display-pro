@@ -311,11 +311,12 @@ function MediaPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
             {filtered.map((m) => {
               const Icon = iconFor(m.file_type);
-              const sources = getMediaUrlCandidates(
-                { mediaTypeHint: m.file_type?.toLowerCase().includes("video") ? "video" : "image" },
-                m.thumbnail_url,
-                m.public_url,
-              );
+              const hint = m.file_type?.toLowerCase().includes("video")
+                ? "video"
+                : m.file_type?.toLowerCase().includes("html")
+                  ? "html"
+                  : "image";
+              const sources = getMediaUrlCandidates({ mediaTypeHint: hint }, m.thumbnail_url, m.public_url);
               return (
                 <article
                   key={m.id}
@@ -383,7 +384,17 @@ function MediaPage() {
         )}
       </Panel>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Adicionar mídia">
+      <Modal
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          setFormError(null);
+          setForm({ name: "", file_type: "image", public_url: "", duration_seconds: 10 });
+          setSourceType("url");
+          setUploadFile(null);
+        }}
+        title="Adicionar mídia"
+      >
         <form onSubmit={submit} className="space-y-3">
           {formError ? (
             <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -451,14 +462,16 @@ function MediaPage() {
               />
             </FormField>
           )}
-          <FormField label="Duração (segundos)">
-            <TextInput
-              type="number"
-              min={1}
-              value={form.duration_seconds}
-              onChange={(e) => setForm({ ...form, duration_seconds: Number(e.target.value) })}
-            />
-          </FormField>
+          {form.file_type !== "video" ? (
+            <FormField label="Duração (segundos) — imagens / HTML">
+              <TextInput
+                type="number"
+                min={1}
+                value={form.duration_seconds}
+                onChange={(e) => setForm({ ...form, duration_seconds: Number(e.target.value) })}
+              />
+            </FormField>
+          ) : null}
           <PrimaryButton type="submit" disabled={create.isPending}>
             {create.isPending ? "Salvando…" : "Adicionar"}
           </PrimaryButton>

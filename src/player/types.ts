@@ -16,8 +16,9 @@ export interface PlaylistItemPayload {
 export interface PlayerPayload {
   screen_id: string;
   organization_id: string;
-  campaign_id: string;
-  playlist_id: string;
+  /** Presente quando a playlist vem de campanha; null no fallback só com mídias da organização. */
+  campaign_id: string | null;
+  playlist_id: string | null;
   payload_version: string;
   valid_until?: string | null;
   priority?: number;

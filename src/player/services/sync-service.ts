@@ -12,8 +12,8 @@ export async function syncPlayerPayload(
     const empty: PlayerPayload = {
       screen_id: screenId,
       organization_id: "",
-      campaign_id: "",
-      playlist_id: "",
+      campaign_id: null,
+      playlist_id: null,
       payload_version: "offline-preview",
       valid_until: null,
       items: [],
@@ -22,7 +22,7 @@ export async function syncPlayerPayload(
   }
 
   try {
-    const payload = validatePayload(await resolveScreenPayload(screenId));
+    const payload = await resolveScreenPayload(screenId);
     await cacheMediaItems(payload.items);
     await setCachedPayload(payload);
     return { payload, fromCache: false };

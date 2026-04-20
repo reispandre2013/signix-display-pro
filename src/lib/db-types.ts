@@ -137,6 +137,8 @@ export interface PlaylistItem {
   playlist_id: string;
   media_asset_id: string;
   position: number;
+  duration_override_seconds?: number | null;
+  transition_type?: string | null;
   created_at: string;
 }
 

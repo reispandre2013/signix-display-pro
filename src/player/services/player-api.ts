@@ -1,12 +1,13 @@
 import { getSupabasePublishableKey, getSupabaseUrl, hasSupabaseEnv } from "@/lib/supabase-client";
 import type { PairingResult, PlaybackLog, PlayerPayload } from "@/player/types";
 import { PLAYER_VERSION_LABEL } from "@/player/version";
+import { validatePayload } from "@/player/validators/payload-validator";
 
 interface ResolveCampaignResult {
   screen_id: string;
   organization_id: string;
-  campaign_id: string;
-  playlist_id: string;
+  campaign_id?: string | null;
+  playlist_id?: string | null;
   payload_version: string;
   valid_until?: string | null;
   priority?: number;
@@ -100,25 +101,24 @@ export async function resolveScreenPayload(screenId: string): Promise<PlayerPayl
     screenId,
   });
 
-  if (!response.payload?.campaign_id || !response.payload?.playlist_id) {
-    throw new Error("Nenhuma campanha ativa para esta tela.");
+  const p = response.payload;
+  const items = p?.items ?? [];
+  if (items.length === 0) {
+    throw new Error("Nenhum item ativo encontrado para esta tela.");
   }
 
   const payload: PlayerPayload = {
-    screen_id: response.payload.screen_id || screenId,
-    organization_id: response.payload.organization_id,
-    campaign_id: response.payload.campaign_id,
-    playlist_id: response.payload.playlist_id,
-    payload_version: response.payload.payload_version,
-    valid_until: response.payload.valid_until ?? null,
-    priority: response.payload.priority,
-    items: response.payload.items ?? [],
+    screen_id: p?.screen_id || screenId,
+    organization_id: p?.organization_id ?? "",
+    campaign_id: p?.campaign_id ?? null,
+    playlist_id: p?.playlist_id ?? null,
+    payload_version: p?.payload_version ?? "unknown",
+    valid_until: p?.valid_until ?? null,
+    priority: p?.priority,
+    items,
   };
 
-  if (payload.items.length === 0) {
-    throw new Error("Campanha sem itens de playlist.");
-  }
-  return payload;
+  return validatePayload(payload);
 }
 
 export async function sendHeartbeat(params: {

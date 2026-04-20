@@ -80,8 +80,8 @@ export function usePlayerRuntime() {
       const log: PlaybackLog = {
         id: newId(),
         screenId: credentials.screenId,
-        campaignId: payload.campaign_id,
-        playlistId: payload.playlist_id,
+        campaignId: payload.campaign_id ?? null,
+        playlistId: payload.playlist_id ?? null,
         mediaAssetId: active.item.media_asset_id,
         itemId: active.item.id,
         playbackStatus: status,
@@ -228,8 +228,8 @@ export function usePlayerRuntime() {
       await queuePlaybackLog({
         id: newId(),
         screenId: credentials.screenId,
-        campaignId: payload.campaign_id,
-        playlistId: payload.playlist_id,
+        campaignId: payload.campaign_id ?? null,
+        playlistId: payload.playlist_id ?? null,
         mediaAssetId: currentItem.media_asset_id,
         itemId: currentItem.id,
         playbackStatus: "started",
