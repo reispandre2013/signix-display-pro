@@ -2,7 +2,7 @@
   "use strict";
 
   global.SIGNIX_TIZEN_CONSTANTS = {
-    PLAYER_VERSION_LABEL: "signix-tizen-player@1.0.2",
+    PLAYER_VERSION_LABEL: "signix-tizen-player@1.0.3",
     STORAGE_CREDENTIALS: "signix_tizen_credentials",
     STORAGE_PAYLOAD_CACHE: "signix_tizen_payload_cache",
     STORAGE_LOG_QUEUE: "signix_tizen_log_queue",
