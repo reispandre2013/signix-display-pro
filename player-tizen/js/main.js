@@ -95,12 +95,20 @@
 
     var debugVisible = false;
     var pollTimer = null;
+    var autoRenewTimer = null;
     var currentPairingCode = null;
 
     function clearPoll() {
       if (pollTimer != null) {
         clearInterval(pollTimer);
         pollTimer = null;
+      }
+    }
+
+    function clearAutoRenew() {
+      if (autoRenewTimer != null) {
+        clearTimeout(autoRenewTimer);
+        autoRenewTimer = null;
       }
     }
 
@@ -139,10 +147,10 @@
         return;
       }
       if (res.status === "expired") {
-        pairingStatusEl.textContent = "Código expirado. Gere um novo.";
+        pairingStatusEl.textContent = "Código expirado. Gerando novo código...";
         return;
       }
-      pairingStatusEl.textContent = "À espera de confirmação no painel…";
+      pairingStatusEl.textContent = "Aguardando pareamento...";
     }
 
     function updateDebug() {
@@ -253,6 +261,7 @@
     }
 
     function afterPairSuccess(creds) {
+      clearAutoRenew();
       Storage.setCredentials(creds);
       runPairingError("");
       showStage("player");
@@ -269,7 +278,9 @@
           updatePairingStatus(res);
           if (res.status === "expired") {
             clearPoll();
-            runPairingError("Este código expirou. Toque em «Gerar novo código».");
+            runPairingError("Este código expirou. Gerando novo automaticamente...");
+            clearAutoRenew();
+            autoRenewTimer = setTimeout(startPairingFlow, 1000);
             return;
           }
           if (res.paired && res.screen_id) {
@@ -292,13 +303,14 @@
 
     function startPairingFlow() {
       clearPoll();
+      clearAutoRenew();
       currentPairingCode = null;
       showStage("pairing");
       runPairingError("");
       updatePairingStatus(null);
       if (pairingCodeDisplay) pairingCodeDisplay.innerHTML = "";
       if (pairingExpires) pairingExpires.textContent = "";
-      if (pairingStatusEl) pairingStatusEl.textContent = "A pedir código ao servidor…";
+      if (pairingStatusEl) pairingStatusEl.textContent = "Aguardando pareamento...";
 
       api
         .createAnonymousPairingCode("tizen")
@@ -330,6 +342,7 @@
     function onReset() {
       if (!global.confirm("Repor pareamento neste dispositivo?")) return;
       clearPoll();
+      clearAutoRenew();
       player.reset();
       Storage.clearCredentials();
       Storage.clearCachedPayload();

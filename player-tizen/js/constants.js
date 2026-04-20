@@ -11,7 +11,7 @@
     SYNC_MS: 90_000,
     LOG_FLUSH_MS: 15_000,
     /** Polling do pareamento (TV mostra código; painel confirma). */
-    PAIRING_POLL_MS: 4000,
+    PAIRING_POLL_MS: 5000,
     IMAGE_MIN_DURATION_SEC: 4,
     IMAGE_DEFAULT_DURATION_SEC: 8,
     WATCHDOG_MIN_MS: 15_000,
