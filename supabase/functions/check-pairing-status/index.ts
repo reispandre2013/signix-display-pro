@@ -20,6 +20,16 @@ function normalizeCode(raw: string) {
   return raw.trim().toUpperCase().replace(/\s+/g, "");
 }
 
+type ScreenInfo = {
+  id: string;
+  name: string | null;
+  organization_id: string | null;
+  unit_id: string | null;
+  platform: string | null;
+  store_type: string | null;
+  orientation: string | null;
+} | null;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -75,13 +85,25 @@ serve(async (req) => {
     else status = "pending";
 
     let screen_name: string | null = null;
+    let screen: ScreenInfo = null;
     if (paired && pairing.screen_id) {
-      const { data: screen } = await adminClient
+      const { data: screenRow } = await adminClient
         .from("screens")
-        .select("name")
+        .select("id, name, organization_id, unit_id, platform, store_type, orientation")
         .eq("id", pairing.screen_id as string)
         .maybeSingle();
-      screen_name = (screen?.name as string) ?? null;
+      screen_name = (screenRow?.name as string) ?? null;
+      if (screenRow) {
+        screen = {
+          id: screenRow.id as string,
+          name: (screenRow.name as string) ?? null,
+          organization_id: (screenRow.organization_id as string) ?? null,
+          unit_id: (screenRow.unit_id as string) ?? null,
+          platform: (screenRow.platform as string) ?? null,
+          store_type: (screenRow.store_type as string) ?? null,
+          orientation: (screenRow.orientation as string) ?? null,
+        };
+      }
     }
 
     return jsonResponse({
@@ -91,6 +113,16 @@ serve(async (req) => {
       status,
       screen_id: paired ? (pairing.screen_id as string) : null,
       screen_name,
+      // Mantém compatibilidade (screen_id/screen_name) e adiciona contexto útil
+      // para o player sair do pareamento com mais metadados.
+      screen,
+      player_config: paired
+        ? {
+            resolve_playlist_function: "resolve-screen-playlist",
+            heartbeat_function: "heartbeat-screen",
+            proof_of_play_function: "generate-proof-of-play",
+          }
+        : null,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
