@@ -30,6 +30,26 @@ type ScreenInfo = {
   orientation: string | null;
 } | null;
 
+async function findScreenByLegacyPairingCode(code: string): Promise<ScreenInfo> {
+  if (!code) return null;
+  const { data: screenRow, error } = await adminClient
+    .from("screens")
+    .select("id, name, organization_id, unit_id, platform, store_type, orientation")
+    .eq("pairing_code", code)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!screenRow) return null;
+  return {
+    id: screenRow.id as string,
+    name: (screenRow.name as string) ?? null,
+    organization_id: (screenRow.organization_id as string) ?? null,
+    unit_id: (screenRow.unit_id as string) ?? null,
+    platform: (screenRow.platform as string) ?? null,
+    store_type: (screenRow.store_type as string) ?? null,
+    orientation: (screenRow.orientation as string) ?? null,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -76,7 +96,7 @@ serve(async (req) => {
       ? new Date(pairing.expires_at as string).getTime() < Date.now()
       : false;
     const used = Boolean(pairing.used_at && pairing.screen_id);
-    const paired = used;
+    let paired = used;
     const expired = expiredByTime && !used;
 
     let status: "pending" | "paired" | "expired";
@@ -106,12 +126,36 @@ serve(async (req) => {
       }
     }
 
+    if (!screen && status !== "expired") {
+      const fallback = await findScreenByLegacyPairingCode(code);
+      if (fallback) {
+        screen = fallback;
+        screen_name = fallback.name ?? null;
+        paired = true;
+        status = "paired";
+
+        // Auto-correção idempotente: se o código foi consumido mas não vinculado
+        // no registro de pairing_codes, preenchemos para estabilizar o polling da TV.
+        if (!pairing.screen_id || !pairing.used_at) {
+          await adminClient
+            .from("pairing_codes")
+            .update({
+              screen_id: fallback.id,
+              organization_id: fallback.organization_id,
+              used_at: pairing.used_at ?? new Date().toISOString(),
+            })
+            .eq("code", code)
+            .is("screen_id", null);
+        }
+      }
+    }
+
     return jsonResponse({
       found: true,
       paired,
       expired,
       status,
-      screen_id: paired ? (pairing.screen_id as string) : null,
+      screen_id: paired ? ((screen?.id ?? pairing.screen_id) as string | null) : null,
       screen_name,
       // Mantém compatibilidade (screen_id/screen_name) e adiciona contexto útil
       // para o player sair do pareamento com mais metadados.

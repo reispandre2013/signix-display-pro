@@ -31,6 +31,17 @@ function normalizeCode(raw: string | null | undefined): string {
     .replace(/\s+/g, "");
 }
 
+async function resolveLegacyScreenIdByPairingCode(code: string): Promise<string> {
+  if (!code) return "";
+  const { data: screen, error } = await adminClient
+    .from("screens")
+    .select("id")
+    .eq("pairing_code", code)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return screen?.id ? String(screen.id) : "";
+}
+
 type ResolveResult = {
   success: boolean;
   playlist: unknown[];
@@ -128,8 +139,23 @@ async function resolveScreenIdFromInput(body: ResolvePayload): Promise<string> {
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  if (!pairing?.screen_id || !pairing?.used_at) return "";
-  return String(pairing.screen_id);
+  if (pairing?.screen_id && pairing?.used_at) return String(pairing.screen_id);
+
+  // Compatibilidade com fluxos antigos/incompletos em que a tela foi criada
+  // com pairing_code, mas pairing_codes não recebeu o vínculo screen_id.
+  const legacyScreenId = await resolveLegacyScreenIdByPairingCode(code);
+  if (!legacyScreenId) return "";
+
+  await adminClient
+    .from("pairing_codes")
+    .update({
+      screen_id: legacyScreenId,
+      used_at: pairing?.used_at ?? new Date().toISOString(),
+    })
+    .eq("code", code)
+    .is("screen_id", null);
+
+  return legacyScreenId;
 }
 
 async function loadScreen(screenId: string): Promise<ScreenRow | null> {
@@ -152,29 +178,24 @@ async function loadScreen(screenId: string): Promise<ScreenRow | null> {
 }
 
 async function loadPayloadFromCampaignFallback(screen: ScreenRow): Promise<unknown | null> {
-  const nowIso = new Date().toISOString();
-  const targetFilters = [`and(target_type.eq.screen,target_id.eq.${screen.id})`];
-  if (screen.unit_id) targetFilters.push(`and(target_type.eq.unit,target_id.eq.${screen.unit_id})`);
-
-  const { data: targets, error: targetError } = await adminClient
-    .from("campaign_targets")
-    .select("campaign_id")
-    .or(targetFilters.join(","));
-  if (targetError) throw new Error(targetError.message);
-
-  const campaignIds = [...new Set((targets ?? []).map((t) => String(t.campaign_id)))];
-  if (campaignIds.length === 0) return null;
+  const { data: campaignResolved, error: resolveError } = await adminClient.rpc(
+    "resolve_screen_campaign",
+    {
+      p_screen_id: screen.id,
+    },
+  );
+  if (resolveError) throw new Error(resolveError.message);
+  const campaignCandidate = (Array.isArray(campaignResolved)
+    ? campaignResolved[0]
+    : campaignResolved) as { campaign_id?: string | null } | null;
+  if (!campaignCandidate?.campaign_id) return null;
 
   const { data: campaigns, error: campaignError } = await adminClient
     .from("campaigns")
     .select("id, name, playlist_id, priority, start_at, end_at, status, updated_at")
     .eq("organization_id", screen.organization_id)
-    .eq("status", "active")
-    .lte("start_at", nowIso)
-    .gte("end_at", nowIso)
-    .in("id", campaignIds)
-    .order("priority", { ascending: false })
-    .order("start_at", { ascending: false })
+    .in("status", ["active", "scheduled"])
+    .eq("id", campaignCandidate.campaign_id)
     .limit(1);
   if (campaignError) throw new Error(campaignError.message);
   const campaign = ((campaigns ?? [])[0] ?? null) as CampaignRow | null;
