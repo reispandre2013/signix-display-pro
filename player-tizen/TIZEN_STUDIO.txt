@@ -35,3 +35,14 @@ Deploy no projeto Supabase (CLI ou Dashboard), por exemplo:
   supabase functions deploy check-pairing-status
 
 No painel, o fluxo continua a ser Dispositivos > Novo dispositivo (claimPairingCode), igual ao da pagina /pareamento no browser.
+
+Versao actual do pacote Tizen (widget): ver config.xml (atributo version) e js/constants.js (PLAYER_VERSION_LABEL).
+
+APK Android (nao e Tizen)
+-------------------------
+Samsung Tizen gera ficheiro .wgt. O APK e o app **Android TV** (Capacitor) na raiz do repo signix-display-pro:
+1. Copie .env.capacitor.example para .env.capacitor e defina CAPACITOR_SERVER_URL (HTTPS do site, ex. .../pareamento?platform=android).
+2. Na raiz: npm install (se preciso), depois npm run android:live OU npx cap sync android.
+3. Abra android/ no Android Studio e Build > Build APK.
+
+Versao Android: android/app/build.gradle (versionCode / versionName) e src/player/version.ts — devem ficar alinhados.
