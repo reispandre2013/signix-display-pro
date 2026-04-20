@@ -88,6 +88,7 @@
     var iframeEl = $("media-html");
     var barCounter = $("bar-counter");
     var offlineBanner = $("offline-banner");
+    var fallbackMessageEl = $("fallback-message");
     var debugPanel = $("debug-panel");
     var debugPre = $("debug-pre");
     var syncBtn = $("btn-sync");
@@ -174,6 +175,23 @@
       );
     }
 
+    function updateFallbackOverlay(stage, status) {
+      if (!fallbackMessageEl) return;
+      var total = status && typeof status.total === "number" ? status.total : 0;
+      var hasContent = total > 0;
+      var shouldShow = (stage === "fallback" || stage === "empty") && !hasContent;
+      fallbackMessageEl.hidden = !shouldShow;
+
+      if (!shouldShow) return;
+      var fm = $("fallback-text");
+      if (fm) {
+        fm.textContent =
+          status && status.lastError
+            ? status.lastError
+            : "Sem itens para reproduzir. Aguarde sincronização ou verifique a campanha.";
+      }
+    }
+
     var player = global.signixCreatePlayerController({
       api: api,
       logger: logger,
@@ -195,18 +213,7 @@
         } else {
           showStage("player");
         }
-        if (stage === "fallback" || stage === "empty") {
-          $("fallback-message").hidden = false;
-          var fm = $("fallback-text");
-          if (fm) {
-            fm.textContent =
-              status && status.lastError
-                ? status.lastError
-                : "Sem itens para reproduzir. Aguarde sincronização ou verifique a campanha.";
-          }
-        } else {
-          $("fallback-message").hidden = true;
-        }
+        updateFallbackOverlay(stage, status);
         updateDebug();
       },
       onIndexChange: function (idx, total) {
