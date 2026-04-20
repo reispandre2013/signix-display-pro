@@ -25,6 +25,7 @@ export const Route = createFileRoute("/app/preview")({
 type MediaRow = {
   id: string;
   name: string;
+  file_type: string;
   public_url: string | null;
   thumbnail_url: string | null;
   duration_seconds: number | null;
@@ -37,7 +38,14 @@ function PreviewPage() {
   const [idx, setIdx] = useState(0);
   const [orient, setOrient] = useState<"horizontal" | "vertical">("horizontal");
   const current = items[idx];
-  const currentSources = current ? getMediaUrlCandidates(current.public_url, current.thumbnail_url) : [];
+  const currentIsVideo = String(current?.file_type ?? "").toLowerCase().includes("video");
+  const currentSources = current
+    ? getMediaUrlCandidates(
+        { mediaTypeHint: current.file_type?.toLowerCase().includes("video") ? "video" : "image" },
+        current.public_url,
+        current.thumbnail_url,
+      )
+    : [];
 
   if (isLoading) return <LoadingState />;
   if (error) return <ErrorState error={error} />;
@@ -100,16 +108,28 @@ function PreviewPage() {
             }`}
           >
             {currentSources.length > 0 ? (
-              <img
-                key={`${current.id}-${currentSources[0]}`}
-                src={currentSources[0]}
-                data-sources={JSON.stringify(currentSources)}
-                data-source-index="0"
-                alt={current.name}
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-                onError={(e) => applyMediaFallback(e.currentTarget)}
-              />
+              currentIsVideo ? (
+                <video
+                  key={`${current.id}-${currentSources[0]}`}
+                  src={currentSources[0]}
+                  className="w-full h-full object-cover bg-black"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                />
+              ) : (
+                <img
+                  key={`${current.id}-${currentSources[0]}`}
+                  src={currentSources[0]}
+                  data-sources={JSON.stringify(currentSources)}
+                  data-source-index="0"
+                  alt={current.name}
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => applyMediaFallback(e.currentTarget)}
+                />
+              )
             ) : (
               <div className="w-full h-full grid place-items-center text-white/40">
                 <ImageIcon className="h-16 w-16" />
@@ -156,10 +176,26 @@ function PreviewPage() {
                   >
                     <span className="text-[11px] font-mono text-muted-foreground w-5">#{i + 1}</span>
                     <div className="h-9 w-14 rounded overflow-hidden bg-muted shrink-0">
-                      {getMediaUrlCandidates(m.thumbnail_url, m.public_url)[0] && (
+                      {getMediaUrlCandidates(
+                        { mediaTypeHint: m.file_type?.toLowerCase().includes("video") ? "video" : "image" },
+                        m.thumbnail_url,
+                        m.public_url,
+                      )[0] && (
                         <img
-                          src={getMediaUrlCandidates(m.thumbnail_url, m.public_url)[0]}
-                          data-sources={JSON.stringify(getMediaUrlCandidates(m.thumbnail_url, m.public_url))}
+                          src={
+                            getMediaUrlCandidates(
+                              { mediaTypeHint: m.file_type?.toLowerCase().includes("video") ? "video" : "image" },
+                              m.thumbnail_url,
+                              m.public_url,
+                            )[0]
+                          }
+                          data-sources={JSON.stringify(
+                            getMediaUrlCandidates(
+                              { mediaTypeHint: m.file_type?.toLowerCase().includes("video") ? "video" : "image" },
+                              m.thumbnail_url,
+                              m.public_url,
+                            ),
+                          )}
                           data-source-index="0"
                           alt={m.name}
                           className="w-full h-full object-cover"

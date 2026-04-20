@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { adminClient } from "../_shared/client.ts";
-import { jsonResponse, readJson } from "../_shared/http.ts";
+import { readJson } from "../_shared/http.ts";
 
 type HeartbeatPayload = {
   screenId: string;
@@ -12,11 +12,31 @@ type HeartbeatPayload = {
   errorMessage?: string | null;
 };
 
+const corsHeaders: Record<string, string> = {
+  "Content-Type": "application/json; charset=utf-8",
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status, headers: corsHeaders });
+}
+
 serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
+  }
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
   try {
     const body = await readJson<HeartbeatPayload>(req);
+    if (!body?.screenId || String(body.screenId).trim() === "") {
+      return jsonResponse({ error: "screenId is required" }, 400);
+    }
     const { error } = await adminClient.rpc("register_screen_heartbeat", {
       p_screen_id: body.screenId,
       p_app_version: body.appVersion ?? null,

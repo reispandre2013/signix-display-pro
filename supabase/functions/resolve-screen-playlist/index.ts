@@ -93,7 +93,10 @@ type MediaRow = {
   valid_from: string | null;
   valid_until: string | null;
   updated_at: string | null;
+  created_at?: string | null;
 };
+
+const storageMediaBuckets = new Set(["media-images", "media-videos", "thumbnails"]);
 
 function detectMediaType(media: MediaRow): "video" | "html" | "banner" | "image" {
   const fileType = String(media.file_type || "").toLowerCase();
@@ -104,12 +107,35 @@ function detectMediaType(media: MediaRow): "video" | "html" | "banner" | "image"
   return "image";
 }
 
-function mapMediaToPayloadItem(link: PlaylistLinkRow, media: MediaRow) {
+function parseStorageObjectPath(rawPath: string | null | undefined): { bucket: string; objectPath: string } | null {
+  const path = String(rawPath ?? "").trim();
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return null;
+  const slash = path.indexOf("/");
+  if (slash <= 0) return null;
+  const bucket = path.slice(0, slash);
+  const objectPath = path.slice(slash + 1);
+  if (!storageMediaBuckets.has(bucket) || !objectPath) return null;
+  return { bucket, objectPath };
+}
+
+async function resolvePlayableMediaUrl(media: MediaRow): Promise<string> {
+  const objectRef = parseStorageObjectPath(media.file_path);
+  if (objectRef) {
+    const { data, error } = await adminClient.storage
+      .from(objectRef.bucket)
+      .createSignedUrl(objectRef.objectPath, 60 * 60);
+    if (!error && data?.signedUrl) return data.signedUrl;
+  }
+  return media.public_url ?? media.file_path ?? "";
+}
+
+function mapMediaToPayloadItem(link: PlaylistLinkRow, media: MediaRow, mediaUrl?: string) {
   return {
     id: String(link.id || media.id),
     media_asset_id: String(media.id),
     media_type: detectMediaType(media),
-    media_url: media.public_url ?? media.file_path ?? "",
+    media_url: mediaUrl ?? media.public_url ?? media.file_path ?? "",
     thumbnail_url: media.thumbnail_url ?? null,
     duration_seconds: link.duration_override_seconds ?? media.duration_seconds ?? 8,
     position: Number(link.position ?? 0),
@@ -120,6 +146,116 @@ function mapMediaToPayloadItem(link: PlaylistLinkRow, media: MediaRow) {
       category: media.category ?? null,
       tags: media.tags ?? [],
     },
+  };
+}
+
+function extractItems(payload: unknown): unknown[] {
+  return Array.isArray((payload as { items?: unknown[] } | null)?.items)
+    ? (((payload as { items?: unknown[] }).items ?? []) as unknown[])
+    : [];
+}
+
+async function loadOrgMediaFallbackPayload(screen: ScreenRow): Promise<unknown | null> {
+  const { data: medias, error } = await adminClient
+    .from("media_assets")
+    .select(
+      "id, name, file_type, category, tags, public_url, file_path, thumbnail_url, duration_seconds, mime_type, status, valid_from, valid_until, updated_at, created_at",
+    )
+    .eq("organization_id", screen.organization_id)
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(80);
+  if (error) throw new Error(error.message);
+
+  const mediaRows = (medias ?? []) as MediaRow[];
+  if (mediaRows.length === 0) return null;
+
+  const nowTs = Date.now();
+  const validMedias = mediaRows
+    .filter((media) => {
+      if (media.valid_from && new Date(media.valid_from).getTime() > nowTs) return false;
+      if (media.valid_until && new Date(media.valid_until).getTime() < nowTs) return false;
+      return true;
+    });
+  const urlPairs = await Promise.all(
+    validMedias.map(async (media) => ({
+      mediaId: media.id,
+      url: await resolvePlayableMediaUrl(media),
+    })),
+  );
+  const urlByMediaId = new Map<string, string>(urlPairs.map((p) => [p.mediaId, p.url]));
+
+  const items = validMedias.map((media, idx) =>
+    mapMediaToPayloadItem(
+      {
+        id: media.id,
+        media_asset_id: media.id,
+        position: idx,
+        duration_override_seconds: null,
+        transition_type: null,
+      },
+      media,
+      urlByMediaId.get(media.id),
+    ),
+  );
+
+  if (items.length === 0) return null;
+
+  return {
+    screen_id: screen.id,
+    organization_id: screen.organization_id,
+    campaign_id: null,
+    playlist_id: null,
+    payload_version: `org-media-fallback:${screen.id}:${items.length}`,
+    valid_until: null,
+    priority: null,
+    items,
+  };
+}
+
+async function refreshPayloadMediaUrls(
+  payload: unknown,
+  organizationId: string,
+): Promise<unknown> {
+  const payloadObj = (payload ?? null) as { items?: unknown[] } | null;
+  const items = Array.isArray(payloadObj?.items) ? (payloadObj?.items ?? []) : [];
+  if (items.length === 0) return payload;
+
+  const mediaIds = Array.from(
+    new Set(
+      items
+        .map((it) => String((it as { media_asset_id?: string }).media_asset_id ?? ""))
+        .filter((id) => id.length > 0),
+    ),
+  );
+  if (mediaIds.length === 0) return payload;
+
+  const { data: medias, error } = await adminClient
+    .from("media_assets")
+    .select(
+      "id, name, file_type, category, tags, public_url, file_path, thumbnail_url, duration_seconds, mime_type, status, valid_from, valid_until, updated_at",
+    )
+    .in("id", mediaIds)
+    .eq("organization_id", organizationId);
+  if (error) throw new Error(error.message);
+
+  const mediaRows = (medias ?? []) as MediaRow[];
+  const urlPairs = await Promise.all(
+    mediaRows.map(async (media) => ({
+      mediaId: media.id,
+      url: await resolvePlayableMediaUrl(media),
+    })),
+  );
+  const urlByMediaId = new Map<string, string>(urlPairs.map((p) => [p.mediaId, p.url]));
+
+  return {
+    ...(payloadObj ?? {}),
+    items: items.map((item) => {
+      const mediaId = String((item as { media_asset_id?: string }).media_asset_id ?? "");
+      const nextUrl = urlByMediaId.get(mediaId);
+      if (!nextUrl) return item;
+      return { ...(item as Record<string, unknown>), media_url: nextUrl };
+    }),
   };
 }
 
@@ -243,11 +379,22 @@ async function loadPayloadFromCampaignFallback(screen: ScreenRow): Promise<unkno
     .map((link) => {
       const media = mediaById.get(link.media_asset_id);
       if (!media) return null;
-      return mapMediaToPayloadItem(link, media);
+      return { link, media };
     })
-    .filter((v) => v != null);
+    .filter((v) => v != null) as Array<{ link: PlaylistLinkRow; media: MediaRow }>;
 
-  if (items.length === 0) return null;
+  const urlPairs = await Promise.all(
+    items.map(async ({ media }) => ({
+      mediaId: media.id,
+      url: await resolvePlayableMediaUrl(media),
+    })),
+  );
+  const urlByMediaId = new Map<string, string>(urlPairs.map((p) => [p.mediaId, p.url]));
+  const mappedItems = items.map(({ link, media }) =>
+    mapMediaToPayloadItem(link, media, urlByMediaId.get(media.id)),
+  );
+
+  if (mappedItems.length === 0) return null;
 
   return {
     screen_id: screen.id,
@@ -257,7 +404,7 @@ async function loadPayloadFromCampaignFallback(screen: ScreenRow): Promise<unkno
     payload_version: `${campaign.id}:${playlistRow.updated_at ?? campaign.updated_at ?? ""}`,
     valid_until: campaign.end_at,
     priority: campaign.priority,
-    items,
+    items: mappedItems,
   };
 }
 
@@ -294,10 +441,15 @@ async function resolvePlaylistByScreenId(screenId: string): Promise<ResolveResul
     throw new Error(error.message);
   }
 
-  const payload = rpcPayload ?? (await loadPayloadFromCampaignFallback(screen));
-  const playlist = Array.isArray((payload as { items?: unknown[] } | null)?.items)
-    ? (((payload as { items?: unknown[] }).items ?? []) as unknown[])
-    : [];
+  const rpcPayloadWithUrls = rpcPayload
+    ? await refreshPayloadMediaUrls(rpcPayload, screen.organization_id)
+    : null;
+  const primaryPayload = rpcPayloadWithUrls ?? (await loadPayloadFromCampaignFallback(screen));
+  const payload =
+    extractItems(primaryPayload).length > 0
+      ? primaryPayload
+      : (await loadOrgMediaFallbackPayload(screen)) ?? primaryPayload;
+  const playlist = extractItems(payload);
 
   return {
     success: true,

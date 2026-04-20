@@ -177,6 +177,33 @@ function buildPlaylistEtag(campaignId: string | null, itemIds: string[]): string
   return `${campaignId ?? "none"}:${itemIds.join(",")}`;
 }
 
+const storageMediaBuckets = new Set(["media-images", "media-videos", "thumbnails"]);
+
+function parseStorageObjectPath(rawPath: string | null | undefined): { bucket: string; objectPath: string } | null {
+  const path = String(rawPath ?? "").trim();
+  if (!path || /^https?:\/\//i.test(path)) return null;
+  const slash = path.indexOf("/");
+  if (slash <= 0) return null;
+  const bucket = path.slice(0, slash);
+  const objectPath = path.slice(slash + 1);
+  if (!storageMediaBuckets.has(bucket) || !objectPath) return null;
+  return { bucket, objectPath };
+}
+
+async function resolvePlayableMediaUrl(
+  filePath: string | null | undefined,
+  publicUrl: string | null | undefined,
+): Promise<string | null> {
+  const objectRef = parseStorageObjectPath(filePath);
+  if (objectRef) {
+    const { data, error } = await supabaseAdmin.storage
+      .from(objectRef.bucket)
+      .createSignedUrl(objectRef.objectPath, 60 * 60);
+    if (!error && data?.signedUrl) return data.signedUrl;
+  }
+  return publicUrl ?? filePath ?? null;
+}
+
 type GetPlaylistInput = {
   screen_id: string;
   pairing_code: string;
@@ -280,26 +307,32 @@ export const getScreenPlaylistPayload = createServerFn({ method: "POST" })
         const ids = links.map((l) => l.media_asset_id as string);
         const { data: medias, error: mErr } = await supabaseAdmin
           .from("media_assets")
-          .select("id, name, public_url, thumbnail_url, mime_type, duration_seconds, status")
+          .select("id, name, file_path, public_url, thumbnail_url, mime_type, duration_seconds, status")
           .in("id", ids)
           .eq("organization_id", orgId);
         if (mErr) throw new Error(mErr.message);
         const byId = new Map((medias ?? []).map((m) => [m.id as string, m]));
-        items = links
-          .map((l) => {
+        const playlistEntries = await Promise.all(
+          links.map(async (l) => {
             const m = byId.get(l.media_asset_id as string);
             if (!m || m.status !== "active") return null;
+            const mediaUrl = await resolvePlayableMediaUrl(
+              m.file_path as string | null,
+              m.public_url as string | null,
+            );
+            if (!mediaUrl) return null;
             return {
               id: m.id as string,
               name: (m.name as string) ?? "",
-              public_url: m.public_url as string | null,
+              public_url: mediaUrl,
               thumbnail_url: m.thumbnail_url as string | null,
               mime_type: m.mime_type as string | null,
               duration_seconds: m.duration_seconds as number | null,
               position: Number(l.position ?? 0),
-            };
-          })
-          .filter(Boolean) as ScreenPlaylistItem[];
+            } satisfies ScreenPlaylistItem;
+          }),
+        );
+        items = playlistEntries.filter((entry) => entry != null) as ScreenPlaylistItem[];
         items.sort((a, b) => a.position - b.position);
         source = items.length > 0 ? "playlist_items" : "empty";
       }
@@ -307,22 +340,31 @@ export const getScreenPlaylistPayload = createServerFn({ method: "POST" })
       if (items.length === 0) {
         const { data: fallback, error: fErr } = await supabaseAdmin
           .from("media_assets")
-          .select("id, name, public_url, thumbnail_url, mime_type, duration_seconds, status")
+          .select("id, name, file_path, public_url, thumbnail_url, mime_type, duration_seconds, status")
           .eq("organization_id", orgId)
           .eq("status", "active")
-          .not("public_url", "is", null)
           .order("created_at", { ascending: false })
           .limit(80);
         if (fErr) throw new Error(fErr.message);
-        items = (fallback ?? []).map((m, idx) => ({
-          id: m.id as string,
-          name: (m.name as string) ?? "",
-          public_url: m.public_url as string | null,
-          thumbnail_url: m.thumbnail_url as string | null,
-          mime_type: m.mime_type as string | null,
-          duration_seconds: m.duration_seconds as number | null,
-          position: idx,
-        }));
+        const fallbackEntries = await Promise.all(
+          (fallback ?? []).map(async (m, idx) => {
+            const mediaUrl = await resolvePlayableMediaUrl(
+              m.file_path as string | null,
+              m.public_url as string | null,
+            );
+            if (!mediaUrl) return null;
+            return {
+              id: m.id as string,
+              name: (m.name as string) ?? "",
+              public_url: mediaUrl,
+              thumbnail_url: m.thumbnail_url as string | null,
+              mime_type: m.mime_type as string | null,
+              duration_seconds: m.duration_seconds as number | null,
+              position: idx,
+            } satisfies ScreenPlaylistItem;
+          }),
+        );
+        items = fallbackEntries.filter((entry) => entry != null) as ScreenPlaylistItem[];
         source = items.length > 0 ? "org_media_fallback" : "empty";
       }
 

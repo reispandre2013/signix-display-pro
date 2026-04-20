@@ -68,6 +68,8 @@ export function useScreens() {
   return useQuery({
     queryKey: ["screens", orgId],
     enabled: !!orgId,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: true,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("screens")

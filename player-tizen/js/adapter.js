@@ -20,10 +20,20 @@
     return raw && raw.length > 0 ? raw : "Falha no pareamento.";
   }
 
-  function toDirectMediaUrl(url) {
+  function inferMediaHint(url, explicit) {
+    var hint = String(explicit || "").toLowerCase();
+    if (hint === "video" || hint === "html" || hint === "banner" || hint === "image") return hint;
+    var lower = String(url || "").toLowerCase();
+    if (/\.(mp4|m4v|webm|mov)(\?|$)/.test(lower)) return "video";
+    if (/\.(html|htm)(\?|$)/.test(lower)) return "html";
+    return "image";
+  }
+
+  function toDirectMediaUrl(url, mediaTypeHint) {
     if (url == null) return "";
     var normalizedUrl = String(url).trim();
     if (!normalizedUrl) return "";
+    var mediaHint = inferMediaHint(normalizedUrl, mediaTypeHint);
 
     var isGoogleDrive = /(?:drive|docs)\.google\.com|googleusercontent\.com/.test(normalizedUrl);
     var m1 = normalizedUrl.match(/drive\.google\.com\/file\/d\/([^/?]+)/);
@@ -32,7 +42,12 @@
     var m4 = isGoogleDrive ? normalizedUrl.match(/[?&]id=([^&]+)/) : null;
     var driveId = (m1 && m1[1]) || (m2 && m2[1]) || (m3 && m3[1]) || (m4 && m4[1]);
 
-    if (driveId) return "https://lh3.googleusercontent.com/d/" + driveId + "=w1600";
+    if (driveId) {
+      if (mediaHint === "video") {
+        return "https://drive.google.com/uc?export=download&id=" + driveId;
+      }
+      return "https://lh3.googleusercontent.com/d/" + driveId + "=w1600";
+    }
 
     if (normalizedUrl.indexOf("dropbox.com") !== -1) {
       var cleanUrl = normalizedUrl.replace(/[?&](dl|raw)=\d/g, "");
@@ -44,10 +59,15 @@
 
   function getMediaUrlCandidates() {
     var urls = Array.prototype.slice.call(arguments);
+    var mediaTypeHint = null;
+    if (urls.length > 0 && urls[0] && typeof urls[0] === "object" && !Array.isArray(urls[0])) {
+      mediaTypeHint = urls[0].mediaTypeHint || null;
+      urls = urls.slice(1);
+    }
     var seen = {};
     var out = [];
     for (var i = 0; i < urls.length; i++) {
-      var u = toDirectMediaUrl(urls[i]);
+      var u = toDirectMediaUrl(urls[i], mediaTypeHint);
       if (u && !seen[u]) {
         seen[u] = true;
         out.push(u);
@@ -111,7 +131,7 @@
       var it = itemsIn[i];
       if (!it || !it.media_asset_id) continue;
       var mediaType = it.media_type || "image";
-      var candidates = getMediaUrlCandidates(it.media_url, it.thumbnail_url);
+      var candidates = getMediaUrlCandidates({ mediaTypeHint: mediaType }, it.media_url, it.thumbnail_url);
       var primary = candidates[0] || "";
       if (!primary && mediaType !== "html") continue;
 

@@ -246,7 +246,9 @@
       /* image / banner */
       if (imgEl) {
         imgEl.style.display = "block";
-        var cand = item.media_url_candidates || Adapter.getMediaUrlCandidates(item.media_url, item.thumbnail_url);
+        var cand =
+          item.media_url_candidates ||
+          Adapter.getMediaUrlCandidates({ mediaTypeHint: "image" }, item.media_url, item.thumbnail_url);
         imgEl.src = cand[0] || "";
         imgEl.dataset.sources = JSON.stringify(cand);
         imgEl.dataset.sourceIndex = "0";

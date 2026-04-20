@@ -17,20 +17,31 @@ function PlayerPage() {
 
   const [idx, setIdx] = useState(0);
   const [now, setNow] = useState(new Date());
+  const current = items[idx];
+
+  const currentIsVideo = String((current as { file_type?: string } | null)?.file_type ?? "")
+    .toLowerCase()
+    .includes("video");
 
   useEffect(() => {
-    if (items.length === 0) return;
-    const t = setInterval(() => setIdx((i) => (i + 1) % items.length), 5000);
-    return () => clearInterval(t);
-  }, [items.length]);
+    if (items.length === 0 || !current || currentIsVideo) return;
+    const durationMs = Math.max(4, Number(current.duration_seconds ?? 5)) * 1000;
+    const t = setTimeout(() => setIdx((i) => (i + 1) % items.length), durationMs);
+    return () => clearTimeout(t);
+  }, [items.length, current, currentIsVideo]);
 
   useEffect(() => {
     const c = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(c);
   }, []);
 
-  const current = items[idx];
-  const currentSources = current ? getMediaUrlCandidates(current.public_url, current.thumbnail_url) : [];
+  const currentSources = current
+    ? getMediaUrlCandidates(
+        { mediaTypeHint: String((current as { file_type?: string }).file_type ?? "").includes("video") ? "video" : "image" },
+        current.public_url,
+        current.thumbnail_url,
+      )
+    : [];
 
   if (items.length === 0) {
     return (
@@ -49,16 +60,29 @@ function PlayerPage() {
   return (
     <div className="min-h-screen w-screen bg-black text-white flex flex-col overflow-hidden">
       <div className="absolute inset-0">
-        <img
-          src={currentSources[0] ?? ""}
-          data-sources={JSON.stringify(currentSources)}
-          data-source-index="0"
-          alt={current.name}
-          className="w-full h-full object-cover transition-opacity duration-1000"
-          key={`${current.id}-${currentSources[0] ?? "empty"}`}
-          referrerPolicy="no-referrer"
-          onError={(e) => applyMediaFallback(e.currentTarget)}
-        />
+        {currentIsVideo ? (
+          <video
+            key={`${current.id}-${currentSources[0] ?? "empty"}`}
+            src={currentSources[0] ?? ""}
+            className="w-full h-full object-cover"
+            autoPlay
+            muted
+            playsInline
+            onEnded={() => setIdx((i) => (i + 1) % items.length)}
+            onError={() => setIdx((i) => (i + 1) % items.length)}
+          />
+        ) : (
+          <img
+            src={currentSources[0] ?? ""}
+            data-sources={JSON.stringify(currentSources)}
+            data-source-index="0"
+            alt={current.name}
+            className="w-full h-full object-cover transition-opacity duration-1000"
+            key={`${current.id}-${currentSources[0] ?? "empty"}`}
+            referrerPolicy="no-referrer"
+            onError={(e) => applyMediaFallback(e.currentTarget)}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
       </div>
 

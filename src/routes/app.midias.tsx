@@ -6,6 +6,8 @@ import { StatusBadge } from "@/components/ui-kit/StatusBadge";
 import { LoadingState, EmptyState, ErrorState } from "@/components/ui-kit/States";
 import { Modal, FormField, TextInput, PrimaryButton } from "@/components/ui-kit/FormControls";
 import { useMedia, useCreateMedia, useDeleteMedia } from "@/lib/hooks/use-supabase-data";
+import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/integrations/supabase/client";
 import { applyMediaFallback, getMediaUrlCandidates } from "@/lib/media-url";
 import {
   Plus,
@@ -38,12 +40,106 @@ type MediaRow = {
   created_at: string;
 };
 
+type DetectedMedia = {
+  fileType: "image" | "video" | "html";
+  mimeType: string | null;
+  extension: string | null;
+};
+
+type UploadDetectedMedia = {
+  fileType: "image" | "video";
+  mimeType: string;
+  extension: string;
+  bucket: "media-images" | "media-videos";
+};
+
+const MAX_IMAGE_UPLOAD_BYTES = 50 * 1024 * 1024;
+const MAX_VIDEO_UPLOAD_BYTES = 500 * 1024 * 1024;
+
+function sanitizeFileName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function detectMediaFromUrl(urlRaw: string, fallback: "image" | "video" | "html"): DetectedMedia {
+  const lower = urlRaw.trim().toLowerCase();
+  const extMatch = lower.match(/\.([a-z0-9]+)(?:\?|#|$)/);
+  const ext = extMatch?.[1] ?? null;
+
+  if (ext === "mp4" || lower.includes("mime=video/mp4")) {
+    return { fileType: "video", mimeType: "video/mp4", extension: "mp4" };
+  }
+  if (ext === "html" || ext === "htm") {
+    return { fileType: "html", mimeType: "text/html", extension: ext };
+  }
+  if (ext && ["png", "jpg", "jpeg", "webp", "gif", "bmp", "svg"].includes(ext)) {
+    const mime =
+      ext === "jpg" || ext === "jpeg"
+        ? "image/jpeg"
+        : ext === "svg"
+          ? "image/svg+xml"
+          : `image/${ext}`;
+    return { fileType: "image", mimeType: mime, extension: ext };
+  }
+
+  // Links do Google Drive não trazem extensão no URL: usamos fallback de UI.
+  if (fallback === "video") return { fileType: "video", mimeType: "video/mp4", extension: "mp4" };
+  if (fallback === "html") return { fileType: "html", mimeType: "text/html", extension: "html" };
+  return { fileType: "image", mimeType: null, extension: null };
+}
+
+function detectMediaFromFile(file: File): UploadDetectedMedia | null {
+  const nameLower = file.name.toLowerCase();
+  const extMatch = nameLower.match(/\.([a-z0-9]+)$/);
+  const ext = extMatch?.[1] ?? "";
+  const mime = String(file.type || "").toLowerCase();
+
+  if (mime === "video/mp4" || ext === "mp4") {
+    return {
+      fileType: "video",
+      mimeType: "video/mp4",
+      extension: "mp4",
+      bucket: "media-videos",
+    };
+  }
+
+  const imageExtensions = new Set(["png", "jpg", "jpeg", "webp", "gif", "bmp", "svg"]);
+  if (mime.startsWith("image/") || imageExtensions.has(ext)) {
+    const normalizedExtension = ext || (mime.startsWith("image/") ? mime.replace("image/", "") : "jpg");
+    const normalizedMime =
+      mime && mime.startsWith("image/")
+        ? mime
+        : normalizedExtension === "jpg" || normalizedExtension === "jpeg"
+          ? "image/jpeg"
+          : normalizedExtension === "svg"
+            ? "image/svg+xml"
+            : `image/${normalizedExtension}`;
+    return {
+      fileType: "image",
+      mimeType: normalizedMime,
+      extension: normalizedExtension,
+      bucket: "media-images",
+    };
+  }
+
+  return null;
+}
+
 function MediaPage() {
+  const { profile } = useAuth();
   const { data: media = [], isLoading, error } = useMedia();
   const create = useCreateMedia();
   const remove = useDeleteMedia();
   const [open, setOpen] = useState(false);
+  const [sourceType, setSourceType] = useState<"url" | "upload">("url");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [search, setSearch] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     file_type: "image",
@@ -55,18 +151,104 @@ function MediaPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await create.mutateAsync({
-      name: form.name,
-      file_type: form.file_type,
-      file_path: form.public_url,
-      public_url: form.public_url,
-      thumbnail_url: form.public_url,
-      duration_seconds: form.duration_seconds,
-      tags: [],
-      status: "active",
-    });
-    setOpen(false);
-    setForm({ name: "", file_type: "image", public_url: "", duration_seconds: 10 });
+    setFormError(null);
+    try {
+      if (sourceType === "upload") {
+      if (!profile?.organization_id) {
+        setFormError("Não foi possível identificar a organização da sessão.");
+        return;
+      }
+      if (!uploadFile) {
+        setFormError("Selecione um arquivo para upload.");
+        return;
+      }
+
+      const detectedFile = detectMediaFromFile(uploadFile);
+      if (!detectedFile) {
+        setFormError("Formato inválido. Envie imagem ou vídeo MP4.");
+        return;
+      }
+      if (detectedFile.fileType === "video" && detectedFile.mimeType !== "video/mp4") {
+        setFormError("No momento, apenas vídeo MP4 é suportado.");
+        return;
+      }
+      if (detectedFile.fileType === "image" && uploadFile.size > MAX_IMAGE_UPLOAD_BYTES) {
+        setFormError("Imagem acima do limite de 50MB.");
+        return;
+      }
+      if (detectedFile.fileType === "video" && uploadFile.size > MAX_VIDEO_UPLOAD_BYTES) {
+        setFormError("Vídeo acima do limite de 500MB.");
+        return;
+      }
+
+      const cleaned = sanitizeFileName(form.name || uploadFile.name || "media");
+      const now = Date.now();
+      const objectPath = `${profile.organization_id}/${now}-${cleaned}.${detectedFile.extension}`;
+      const fullStoragePath = `${detectedFile.bucket}/${objectPath}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(detectedFile.bucket)
+        .upload(objectPath, uploadFile, {
+          contentType: detectedFile.mimeType,
+          cacheControl: "3600",
+          upsert: false,
+        });
+      if (uploadError) {
+        setFormError(`Falha no upload: ${uploadError.message}`);
+        return;
+      }
+
+      const { data: signedData } = await supabase.storage
+        .from(detectedFile.bucket)
+        .createSignedUrl(objectPath, 60 * 60 * 24 * 30);
+
+        await create.mutateAsync({
+          name: form.name,
+          file_type: detectedFile.fileType,
+          file_path: fullStoragePath,
+          public_url: signedData?.signedUrl ?? null,
+          thumbnail_url: detectedFile.fileType === "video" ? null : signedData?.signedUrl ?? null,
+          duration_seconds: detectedFile.fileType === "video" ? null : form.duration_seconds,
+          mime_type: detectedFile.mimeType,
+          file_size: uploadFile.size,
+          tags: [],
+          status: "active",
+        });
+      } else {
+        const detected = detectMediaFromUrl(
+          form.public_url,
+          form.file_type as "image" | "video" | "html",
+        );
+        if (
+          detected.fileType === "video" &&
+          detected.mimeType !== "video/mp4" &&
+          !form.public_url.toLowerCase().includes("drive.google.com")
+        ) {
+          setFormError("No momento, apenas vídeo MP4 é suportado.");
+          return;
+        }
+        await create.mutateAsync({
+          name: form.name,
+          file_type: detected.fileType,
+          file_path: form.public_url,
+          public_url: form.public_url,
+          thumbnail_url: detected.fileType === "video" ? null : form.public_url,
+          duration_seconds: detected.fileType === "video" ? null : form.duration_seconds,
+          mime_type: detected.mimeType,
+          tags: [],
+          status: "active",
+        });
+      }
+
+      setOpen(false);
+      setForm({ name: "", file_type: "image", public_url: "", duration_seconds: 10 });
+      setSourceType("url");
+      setUploadFile(null);
+      setFormError(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Falha ao salvar mídia.";
+      setFormError(message);
+    }
   };
 
   const iconFor = (t: string) =>
@@ -93,7 +275,7 @@ function MediaPage() {
         </div>
         <p className="font-display text-base font-semibold">Adicionar arquivo via URL</p>
         <p className="text-xs text-muted-foreground mt-1">
-          Cole a URL pública da imagem, vídeo ou HTML. Upload completo via Storage chega em breve.
+          Use URL externa (Google Drive incluído) ou upload direto no Storage.
         </p>
       </button>
 
@@ -129,7 +311,11 @@ function MediaPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
             {filtered.map((m) => {
               const Icon = iconFor(m.file_type);
-              const sources = getMediaUrlCandidates(m.thumbnail_url, m.public_url);
+              const sources = getMediaUrlCandidates(
+                { mediaTypeHint: m.file_type?.toLowerCase().includes("video") ? "video" : "image" },
+                m.thumbnail_url,
+                m.public_url,
+              );
               return (
                 <article
                   key={m.id}
@@ -137,16 +323,28 @@ function MediaPage() {
                 >
                   <div className="relative aspect-video bg-surface overflow-hidden">
                     {sources.length > 0 ? (
-                      <img
-                        src={sources[0]}
-                        data-sources={JSON.stringify(sources)}
-                        data-source-index="0"
-                        alt={m.name}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                        onError={(e) => applyMediaFallback(e.currentTarget)}
-                      />
+                      m.file_type?.toLowerCase().includes("video") ? (
+                        <video
+                          src={sources[0]}
+                          className="w-full h-full object-cover bg-black"
+                          muted
+                          loop
+                          autoPlay
+                          playsInline
+                          preload="metadata"
+                        />
+                      ) : (
+                        <img
+                          src={sources[0]}
+                          data-sources={JSON.stringify(sources)}
+                          data-source-index="0"
+                          alt={m.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => applyMediaFallback(e.currentTarget)}
+                        />
+                      )
                     ) : (
                       <div className="w-full h-full grid place-items-center text-muted-foreground">
                         <Icon className="h-6 w-6" />
@@ -187,8 +385,39 @@ function MediaPage() {
 
       <Modal open={open} onClose={() => setOpen(false)} title="Adicionar mídia">
         <form onSubmit={submit} className="space-y-3">
+          {formError ? (
+            <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {formError}
+            </p>
+          ) : null}
           <FormField label="Nome">
             <TextInput required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </FormField>
+          <FormField label="Origem da mídia">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setSourceType("url")}
+                className={`rounded-lg border px-3 py-2 text-sm transition ${
+                  sourceType === "url"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-input bg-surface text-foreground"
+                }`}
+              >
+                Link externo
+              </button>
+              <button
+                type="button"
+                onClick={() => setSourceType("upload")}
+                className={`rounded-lg border px-3 py-2 text-sm transition ${
+                  sourceType === "upload"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-input bg-surface text-foreground"
+                }`}
+              >
+                Upload no sistema
+              </button>
+            </div>
           </FormField>
           <FormField label="Tipo">
             <select
@@ -201,15 +430,27 @@ function MediaPage() {
               <option value="html">HTML</option>
             </select>
           </FormField>
-          <FormField label="URL pública">
-            <TextInput
-              type="url"
-              required
-              placeholder="https://…"
-              value={form.public_url}
-              onChange={(e) => setForm({ ...form, public_url: e.target.value })}
-            />
-          </FormField>
+          {sourceType === "url" ? (
+            <FormField label="URL pública">
+              <TextInput
+                type="url"
+                required
+                placeholder="https://…"
+                value={form.public_url}
+                onChange={(e) => setForm({ ...form, public_url: e.target.value })}
+              />
+            </FormField>
+          ) : (
+            <FormField label="Arquivo">
+              <input
+                type="file"
+                required
+                accept={form.file_type === "video" ? "video/mp4" : "image/*,video/mp4"}
+                onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+                className="w-full rounded-lg border border-input bg-surface px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary"
+              />
+            </FormField>
+          )}
           <FormField label="Duração (segundos)">
             <TextInput
               type="number"

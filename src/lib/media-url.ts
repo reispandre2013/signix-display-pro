@@ -1,7 +1,23 @@
-export function toDirectMediaUrl(url?: string | null) {
+type MediaUrlHint = "image" | "video" | "html" | "banner";
+
+function inferMediaHint(url: string, explicit?: string | null): MediaUrlHint {
+  const hint = String(explicit ?? "").toLowerCase();
+  if (hint === "video") return "video";
+  if (hint === "html") return "html";
+  if (hint === "banner") return "banner";
+  if (hint === "image") return "image";
+
+  const lower = url.toLowerCase();
+  if (/\.(mp4|m4v|webm|mov)(\?|$)/.test(lower)) return "video";
+  if (/\.(html|htm)(\?|$)/.test(lower)) return "html";
+  return "image";
+}
+
+export function toDirectMediaUrl(url?: string | null, mediaTypeHint?: string | null) {
   if (!url) return "";
 
   const normalizedUrl = url.trim();
+  const mediaHint = inferMediaHint(normalizedUrl, mediaTypeHint);
   const isGoogleDrive = /(?:drive|docs)\.google\.com|googleusercontent\.com/.test(normalizedUrl);
   const driveId =
     normalizedUrl.match(/drive\.google\.com\/file\/d\/([^/?]+)/)?.[1] ||
@@ -9,7 +25,13 @@ export function toDirectMediaUrl(url?: string | null) {
     normalizedUrl.match(/lh3\.googleusercontent\.com\/d\/([^=/?]+)/)?.[1] ||
     (isGoogleDrive ? normalizedUrl.match(/[?&]id=([^&]+)/)?.[1] : undefined);
 
-  if (driveId) return `https://lh3.googleusercontent.com/d/${driveId}=w1600`;
+  if (driveId) {
+    if (mediaHint === "video") {
+      // Para vídeo no Drive, usar endpoint de download/stream.
+      return `https://drive.google.com/uc?export=download&id=${driveId}`;
+    }
+    return `https://lh3.googleusercontent.com/d/${driveId}=w1600`;
+  }
 
   if (normalizedUrl.includes("dropbox.com")) {
     const cleanUrl = normalizedUrl.replace(/[?&](dl|raw)=\d/g, "");
@@ -19,8 +41,19 @@ export function toDirectMediaUrl(url?: string | null) {
   return normalizedUrl;
 }
 
-export function getMediaUrlCandidates(...urls: Array<string | null | undefined>) {
-  return Array.from(new Set(urls.map((url) => toDirectMediaUrl(url)).filter(Boolean)));
+export function getMediaUrlCandidates(
+  ...args: Array<string | null | undefined | { mediaTypeHint?: string | null }>
+) {
+  let mediaTypeHint: string | null = null;
+  let urls = args as Array<string | null | undefined>;
+  const first = args[0];
+  if (first && typeof first === "object" && !Array.isArray(first)) {
+    mediaTypeHint = first.mediaTypeHint ?? null;
+    urls = args.slice(1) as Array<string | null | undefined>;
+  }
+  return Array.from(
+    new Set(urls.map((url) => toDirectMediaUrl(url, mediaTypeHint)).filter(Boolean)),
+  );
 }
 
 export function applyMediaFallback(img: HTMLImageElement) {

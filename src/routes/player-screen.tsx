@@ -160,7 +160,13 @@ function PlayerScreenPage() {
   }, [screenId, pairingCode, platform, items, idx, heartbeatFn]);
 
   const current = items[idx];
-  const urls = current ? getMediaUrlCandidates(current.public_url, current.thumbnail_url) : [];
+  const urls = current
+    ? getMediaUrlCandidates(
+        { mediaTypeHint: (current?.mime_type ?? "").toLowerCase().includes("video") ? "video" : "image" },
+        current.public_url,
+        current.thumbnail_url,
+      )
+    : [];
   const isVideo = (current?.mime_type ?? "").toLowerCase().includes("video");
 
   if (screenId && pairingCode && !initialSyncDone) {
