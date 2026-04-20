@@ -71,7 +71,12 @@ body {
   background: rgba(220, 60, 60, 0.15);
   border: 1px solid rgba(220, 60, 60, 0.35);
   color: #ffc9c9;
-  font-size: 0.9rem;
+  font-size: clamp(0.75rem, 2.2vw, 0.9rem);
+  line-height: 1.45;
+  max-height: min(40vh, 14rem);
+  overflow-y: auto;
+  text-align: left;
+  word-break: break-word;
 }
 
 .activation-wrap {

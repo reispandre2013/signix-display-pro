@@ -15,23 +15,65 @@
     var anon = config.supabaseAnonKey;
     if (!anon) throw new Error("Chave anónima Supabase em falta (window.SIGNIX_CONFIG.supabaseAnonKey).");
 
+    function mapNetworkError(fnName, err) {
+      var msg = err instanceof Error ? err.message : String(err);
+      var lower = msg.toLowerCase();
+      if (
+        lower.indexOf("failed to fetch") !== -1 ||
+        lower.indexOf("networkerror") !== -1 ||
+        lower.indexOf("load failed") !== -1
+      ) {
+        var hint =
+          "Não foi possível ligar ao Supabase (" +
+          fnName +
+          "). Confirme: 1) Em index.html, supabaseUrl e supabaseAnonKey são os valores reais do projeto (não deixe «SEU_PROJETO» nem «COLE_AQUI…»). 2) No Supabase Dashboard, as Edge Functions «create-pairing-code» e «check-pairing-status» estão publicadas (supabase functions deploy …). 3) A TV tem data/hora correcta e acesso HTTPS à Internet.";
+        return new Error(hint);
+      }
+      return err instanceof Error ? err : new Error(msg);
+    }
+
     function postFunction(name, payload) {
-      return fetch(buildFunctionUrl(supabaseUrl, name), {
+      var url = buildFunctionUrl(supabaseUrl, name);
+      return fetch(url, {
         method: "POST",
+        mode: "cors",
+        credentials: "omit",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
           apikey: anon,
           Authorization: "Bearer " + anon,
         },
         body: JSON.stringify(payload),
-      }).then(function (res) {
-        return res.json().then(function (data) {
-          if (!res.ok || (data && data.error)) {
-            throw new Error((data && data.error) || "Falha na função " + name);
-          }
-          return data;
+      })
+        .then(function (res) {
+          return res.text().then(function (text) {
+            var data = null;
+            if (text) {
+              try {
+                data = JSON.parse(text);
+              } catch (parseErr) {
+                throw new Error(
+                  "Resposta inválida de " +
+                    name +
+                    " (HTTP " +
+                    res.status +
+                    "). A função existe no projeto? Publique com: supabase functions deploy " +
+                    name,
+                );
+              }
+            } else {
+              data = {};
+            }
+            if (!res.ok || (data && data.error)) {
+              throw new Error((data && data.error) || "Falha na função " + name + " (HTTP " + res.status + ")");
+            }
+            return data;
+          });
+        })
+        .catch(function (err) {
+          throw mapNetworkError(name, err);
         });
-      });
     }
 
     /** Fluxo correcto: TV pede código ao backend (sem digitar no painel). */

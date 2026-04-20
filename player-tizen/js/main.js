@@ -17,9 +17,16 @@
         "Configure window.SIGNIX_CONFIG no index.html (supabaseUrl e supabaseAnonKey).",
       );
     }
+    var supabaseUrl = String(cfg.supabaseUrl).trim();
+    var supabaseAnonKey = String(cfg.supabaseAnonKey).trim();
+    if (supabaseUrl.indexOf("SEU_PROJETO") !== -1 || supabaseAnonKey.indexOf("COLE_AQUI") !== -1) {
+      throw new Error(
+        "Substitua em index.html os valores reais de supabaseUrl e supabaseAnonKey (Project Settings → API no Supabase). Os placeholders provocam «Failed to fetch» na TV.",
+      );
+    }
     return {
-      supabaseUrl: String(cfg.supabaseUrl).trim(),
-      supabaseAnonKey: String(cfg.supabaseAnonKey).trim(),
+      supabaseUrl: supabaseUrl,
+      supabaseAnonKey: supabaseAnonKey,
       debugMode: !!cfg.debugMode,
     };
   }
