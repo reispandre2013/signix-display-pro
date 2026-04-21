@@ -28,6 +28,20 @@ function useOrgId() {
   return profile?.organization_id ?? null;
 }
 
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 function isMissingColumnError(error: unknown, column: string): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
   return msg.includes(`column ${column.toLowerCase()}`) || msg.includes(`"${column.toLowerCase()}"`);
@@ -49,7 +63,11 @@ function isMissingRelationError(error: unknown, relation: string): boolean {
 
 async function safeReindexPlaylist(playlistId: string): Promise<void> {
   const timeoutMs = 2500;
-  const rpcPromise = supabase.rpc("reindex_playlist_items", { p_playlist_id: playlistId });
+  const rpcPromise = withTimeout(
+    supabase.rpc("reindex_playlist_items", { p_playlist_id: playlistId }),
+    timeoutMs,
+    "Timeout ao reindexar playlist.",
+  );
   const timed = (await Promise.race([
     rpcPromise,
     new Promise<{ timeout: true }>((resolve) => {
@@ -76,11 +94,11 @@ async function fetchPlaylistItemsCompat(playlistId: string): Promise<PlaylistIte
   const legacySelect =
     "id, playlist_id, media_asset_id, position, duration_override_seconds, transition_type, created_at, media_assets(id, name, file_type, public_url, thumbnail_url, mime_type, duration_seconds)";
 
-  const first = await supabase
-    .from("playlist_items")
-    .select(fullSelect)
-    .eq("playlist_id", playlistId)
-    .order("position", { ascending: true });
+  const first = await withTimeout(
+    supabase.from("playlist_items").select(fullSelect).eq("playlist_id", playlistId).order("position", { ascending: true }),
+    12000,
+    "Timeout ao listar itens da playlist.",
+  );
 
   if (!first.error) {
     return (first.data ?? []).map((row) => {
@@ -98,11 +116,11 @@ async function fetchPlaylistItemsCompat(playlistId: string): Promise<PlaylistIte
     throw first.error;
   }
 
-  const legacy = await supabase
-    .from("playlist_items")
-    .select(legacySelect)
-    .eq("playlist_id", playlistId)
-    .order("position", { ascending: true });
+  const legacy = await withTimeout(
+    supabase.from("playlist_items").select(legacySelect).eq("playlist_id", playlistId).order("position", { ascending: true }),
+    12000,
+    "Timeout ao listar itens da playlist (modo compatível).",
+  );
   if (legacy.error) throw legacy.error;
 
   return (legacy.data ?? []).map((row) => {
@@ -127,11 +145,15 @@ async function insertPlaylistMediaItems(opts: {
 
   await safeReindexPlaylist(opts.playlistId);
 
-  const existingRes = await supabase
-    .from("playlist_items")
-    .select("media_asset_id, position")
-    .eq("playlist_id", opts.playlistId)
-    .order("position", { ascending: false });
+  const existingRes = await withTimeout(
+    supabase
+      .from("playlist_items")
+      .select("media_asset_id, position")
+      .eq("playlist_id", opts.playlistId)
+      .order("position", { ascending: false }),
+    12000,
+    "Timeout ao verificar mídias já existentes na playlist.",
+  );
   if (existingRes.error) throw existingRes.error;
 
   const existing = existingRes.data ?? [];
@@ -151,7 +173,11 @@ async function insertPlaylistMediaItems(opts: {
     position: nextPosition + idx,
   }));
 
-  const { error } = await supabase.from("playlist_items").insert(rows);
+  const { error } = await withTimeout(
+    supabase.from("playlist_items").insert(rows),
+    12000,
+    "Timeout ao inserir mídia(s) na playlist.",
+  );
   if (error) throw error;
 
   await safeReindexPlaylist(opts.playlistId);
