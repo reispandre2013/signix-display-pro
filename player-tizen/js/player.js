@@ -28,6 +28,77 @@
     var videoEndedHandler = null;
     var videoErrorHandler = null;
 
+    function clearMediaFitStyles(el) {
+      if (!el) return;
+      el.style.objectFit = "";
+      el.style.objectPosition = "";
+      el.style.width = "";
+      el.style.height = "";
+      el.style.maxWidth = "";
+      el.style.maxHeight = "";
+      el.style.margin = "";
+    }
+
+    /**
+     * Ajuste de vídeo/imagem alinhado ao backend (fit_mode_effective, default_fit_mode da tela).
+     */
+    function applyMediaFit(el, item, display, kind) {
+      if (!el) return;
+      clearMediaFitStyles(el);
+      var d = display || {};
+      if (kind === "video" && d.auto_scale_video === false) {
+        el.style.objectFit = "none";
+        el.style.objectPosition = "center";
+        return;
+      }
+      if (kind === "image" && d.auto_scale_image === false) {
+        el.style.objectFit = "none";
+        el.style.objectPosition = "center";
+        return;
+      }
+      var defFit = d.default_fit_mode ? String(d.default_fit_mode) : "cover";
+      var raw = item && (item.fit_mode_effective || item.fit_mode || defFit);
+      var fit = String(raw || "cover").toLowerCase().trim();
+
+      if (fit === "contain") {
+        el.style.objectFit = "contain";
+        el.style.objectPosition = "center";
+        return;
+      }
+      if (fit === "cover") {
+        el.style.objectFit = "cover";
+        el.style.objectPosition = "center";
+        return;
+      }
+      if (fit === "stretch") {
+        el.style.objectFit = "fill";
+        return;
+      }
+      if (fit === "center") {
+        el.style.objectFit = "none";
+        el.style.objectPosition = "center";
+        return;
+      }
+      if (fit === "fit-width") {
+        el.style.objectFit = "contain";
+        el.style.width = "100%";
+        el.style.height = "auto";
+        el.style.maxHeight = "100%";
+        el.style.margin = "0 auto";
+        return;
+      }
+      if (fit === "fit-height") {
+        el.style.objectFit = "contain";
+        el.style.height = "100%";
+        el.style.width = "auto";
+        el.style.maxWidth = "100%";
+        el.style.margin = "auto 0";
+        return;
+      }
+      el.style.objectFit = "cover";
+      el.style.objectPosition = "center";
+    }
+
     function items() {
       return payload && Array.isArray(payload.items) ? payload.items : [];
     }
@@ -53,9 +124,11 @@
         } catch (e) {
           /* ignore */
         }
+        clearMediaFitStyles(videoEl);
         videoEl.style.display = "none";
       }
       if (imgEl) {
+        clearMediaFitStyles(imgEl);
         imgEl.style.display = "none";
         imgEl.removeAttribute("src");
       }
@@ -77,12 +150,14 @@
         screenId: Storage.getCredentials() ? Storage.getCredentials().screenId : null,
         campaignId: payload ? payload.campaign_id : null,
         playlistId: payload ? payload.playlist_id : null,
+        playlistVersion: payload ? payload.playlist_version : null,
         mediaAssetId: cur ? cur.media_asset_id : null,
         index: index,
         total: items().length,
         lastError: lastError,
         fromOfflineCache: fromOfflineCache,
         lastSyncOk: lastSyncOk,
+        display: payload && payload.display ? payload.display : null,
       };
     }
 
@@ -207,6 +282,7 @@
         if (!videoEl) return Promise.resolve();
         return Cache.resolvePlayableUrl(item.media_url).then(function (url) {
           videoEl.style.display = "block";
+          applyMediaFit(videoEl, item, payload && payload.display ? payload.display : null, "video");
           videoEl.muted = true;
           videoEl.playsInline = true;
           videoEl.setAttribute("playsinline", "");
@@ -246,6 +322,7 @@
       /* image / banner */
       if (imgEl) {
         imgEl.style.display = "block";
+        applyMediaFit(imgEl, item, payload && payload.display ? payload.display : null, "image");
         var cand =
           item.media_url_candidates ||
           Adapter.getMediaUrlCandidates({ mediaTypeHint: "image" }, item.media_url, item.thumbnail_url);

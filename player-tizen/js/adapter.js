@@ -118,18 +118,46 @@
         organization_id: "",
         campaign_id: "",
         playlist_id: "",
+        playlist_version: null,
+        resolution_source: null,
         payload_version: "empty",
         valid_until: null,
         priority: null,
+        display: {
+          orientation: "horizontal",
+          resolution: null,
+          screen_width: null,
+          screen_height: null,
+          aspect_ratio: null,
+          default_fit_mode: "cover",
+          auto_scale_video: true,
+          auto_scale_image: true,
+          hide_overlay: true,
+          hide_controls: true,
+        },
         items: [],
       };
     }
+
+    var display = {
+      orientation: rawPayload.orientation || "horizontal",
+      resolution: rawPayload.resolution != null ? rawPayload.resolution : null,
+      screen_width: rawPayload.screen_width != null ? rawPayload.screen_width : null,
+      screen_height: rawPayload.screen_height != null ? rawPayload.screen_height : null,
+      aspect_ratio: rawPayload.aspect_ratio != null ? rawPayload.aspect_ratio : null,
+      default_fit_mode: rawPayload.default_fit_mode || "cover",
+      auto_scale_video: rawPayload.auto_scale_video !== false,
+      auto_scale_image: rawPayload.auto_scale_image !== false,
+      hide_overlay: rawPayload.hide_overlay !== false,
+      hide_controls: rawPayload.hide_controls !== false,
+    };
 
     var itemsIn = Array.isArray(rawPayload.items) ? rawPayload.items : [];
     var items = [];
     for (var i = 0; i < itemsIn.length; i++) {
       var it = itemsIn[i];
       if (!it || !it.media_asset_id) continue;
+      if (it.is_active === false) continue;
       var mediaType = it.media_type || "image";
       var candidates = getMediaUrlCandidates({ mediaTypeHint: mediaType }, it.media_url, it.thumbnail_url);
       var primary = candidates[0] || "";
@@ -137,6 +165,12 @@
 
       var dur = Number(it.duration_seconds);
       if (!dur || dur < 1) dur = C.IMAGE_DEFAULT_DURATION_SEC || 8;
+
+      var effFit =
+        it.fit_mode_effective ||
+        it.fit_mode ||
+        display.default_fit_mode ||
+        "cover";
 
       items.push({
         id: String(it.id || it.media_asset_id),
@@ -147,6 +181,9 @@
         thumbnail_url: it.thumbnail_url || null,
         duration_seconds: dur,
         position: Number(it.position != null ? it.position : i),
+        fit_mode: it.fit_mode != null ? String(it.fit_mode) : null,
+        fit_mode_effective: String(effFit || "cover"),
+        is_active: it.is_active !== false,
         transition_type: it.transition_type || null,
         checksum: it.checksum || null,
         metadata: it.metadata && typeof it.metadata === "object" ? it.metadata : {},
@@ -162,9 +199,13 @@
       organization_id: String(rawPayload.organization_id || ""),
       campaign_id: String(rawPayload.campaign_id || ""),
       playlist_id: String(rawPayload.playlist_id || ""),
+      playlist_version:
+        rawPayload.playlist_version != null ? Number(rawPayload.playlist_version) : null,
+      resolution_source: rawPayload.resolution_source != null ? String(rawPayload.resolution_source) : null,
       payload_version: String(rawPayload.payload_version || ""),
       valid_until: rawPayload.valid_until != null ? rawPayload.valid_until : null,
       priority: rawPayload.priority != null ? rawPayload.priority : null,
+      display: display,
       items: items,
     };
   }

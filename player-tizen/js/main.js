@@ -206,11 +206,26 @@
       media: { video: videoEl, img: imgEl, iframe: iframeEl },
       onStage: function (stage, status) {
         logger.info("[stage]", stage, status);
+        var online = typeof navigator !== "undefined" ? navigator.onLine : true;
+        var hasItems = status && typeof status.total === "number" && status.total > 0;
+        var isPlayback = stage === "playing" && hasItems;
+        var d = status && status.display ? status.display : null;
+
+        var topBar = stagePlayer ? stagePlayer.querySelector(".top-bar") : null;
+        if (topBar) {
+          var hideControls = isPlayback && d && d.hide_controls !== false;
+          topBar.hidden = !!hideControls;
+        }
+
         if (offlineBanner) {
-          var show =
-            status &&
-            (status.fromOfflineCache || (typeof navigator !== "undefined" && !navigator.onLine));
-          offlineBanner.hidden = !show;
+          var showOffline = false;
+          if (!online) {
+            showOffline = true;
+          } else if (status && status.fromOfflineCache) {
+            var hideOverlayWhenPlaying = isPlayback && d && d.hide_overlay !== false;
+            showOffline = !hideOverlayWhenPlaying;
+          }
+          offlineBanner.hidden = !showOffline;
         }
         if (barCounter && status) {
           barCounter.textContent =
